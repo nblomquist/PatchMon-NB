@@ -4,7 +4,9 @@
 # Install: npm install (runs "prepare" -> lefthook install)
 # Govulncheck: go install golang.org/x/vuln/cmd/govulncheck@latest
 pre-commit:
-  parallel: true
+  # Go linters share a process lock; running all suites together also starves
+  # the frontend's interaction tests. Keep every check, but run them in order.
+  parallel: false
   commands:
     biome:
       run: |

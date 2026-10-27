@@ -522,7 +522,13 @@ func TestAPKSecDBFixesAndCache(t *testing.T) {
 	defer srv.Close()
 
 	now := time.Now()
-	db := &apkSecDB{logger: quietLogger(), client: srv.Client(), baseURL: srv.URL, cacheDir: t.TempDir(), cacheOwner: os.Getuid(), now: func() time.Time { return now }}
+	cacheDir := t.TempDir()
+	// Go 1.26 TempDir permissions follow the umask; a group-writable cache
+	// is intentionally untrusted. This test needs a trusted cache fixture.
+	if err := os.Chmod(cacheDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	db := &apkSecDB{logger: quietLogger(), client: srv.Client(), baseURL: srv.URL, cacheDir: cacheDir, cacheOwner: os.Getuid(), now: func() time.Time { return now }}
 
 	fixes := db.fixes(context.Background(), "v3.23", []string{"main", "community"})
 	slices.Sort(fixes["openssl"])

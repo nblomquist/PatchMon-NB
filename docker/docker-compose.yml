@@ -20,7 +20,7 @@ name: patchmon
 services:
 
   server:
-    image: ghcr.io/patchmon/patchmon-server:latest
+    image: ghcr.io/nblomquist/patchmon-nb:latest
     restart: unless-stopped
     # Stable identity for the agent presence registry. Without this the server
     # identifies itself by the container hostname, which Docker derives from the

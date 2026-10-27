@@ -15,6 +15,7 @@
 #   ./docker/build.sh --version 2.0.1      # pin a version (useful for testing
 #                                          # the auto-update path)
 #   ./docker/build.sh --tag mytag          # image tag (default: local)
+#   IMAGE_NAME=my-image ./docker/build.sh # override image name (default: patchmon-nb)
 #   ./docker/build.sh --skip-agents        # reuse whatever is in agents-prebuilt/
 # =============================================================================
 
@@ -25,6 +26,7 @@ cd "$ROOT"
 
 VERSION=""
 IMAGE_TAG="local"
+IMAGE_NAME="${IMAGE_NAME:-patchmon-nb}"
 SKIP_AGENTS="false"
 
 die() { echo "error: $*" >&2; exit 1; }
@@ -113,11 +115,11 @@ for arch in amd64 arm64; do
   echo "    linux/${arch}"
 done
 
-echo "==> Building image patchmon-server:${IMAGE_TAG}"
+echo "==> Building image ${IMAGE_NAME}:${IMAGE_TAG}"
 docker build \
   -f docker/server.Dockerfile \
-  -t "patchmon-server:${IMAGE_TAG}" \
+  -t "${IMAGE_NAME}:${IMAGE_TAG}" \
   .
 
 echo ""
-echo "Built patchmon-server:${IMAGE_TAG} reporting version ${VERSION}"
+echo "Built ${IMAGE_NAME}:${IMAGE_TAG} reporting version ${VERSION}"

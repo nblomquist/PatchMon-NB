@@ -22,6 +22,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  IMAGE_NAME: patchmon-nb
   HARBOR_REGISTRY: cr.dev.patchmon.cloud
 
 # Default to read-only. Write scopes (packages/pull-requests/id-token/
@@ -357,7 +358,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}-server
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           # `latest=auto` tags release builds (semver pushes) as `:latest` but
           # leaves branch/edge builds alone.
           flavor: |
@@ -434,15 +435,15 @@ jobs:
       - name: Resolve image names
         id: img
         if: env.PUSHED == 'true'
-        # `github.repository` is `PatchMon/PatchMon`, and the attest-* actions
+        # The repository owner can contain uppercase letters, and attest-* actions
         # reject a mixed-case subject-name. The GHCR build step above never
         # hits this because docker/metadata-action lowercases internally.
         #
         # REGISTRY and HARBOR_REGISTRY come from the workflow-level env block.
         env:
-          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
         run: |
-          echo "ghcr=${REGISTRY}/$(echo "${REPO}" | tr '[:upper:]' '[:lower:]')-server" >> "$GITHUB_OUTPUT"
+          echo "ghcr=${REGISTRY}/$(echo "${OWNER}" | tr '[:upper:]' '[:lower:]')/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
           echo "harbor=${HARBOR_REGISTRY}/pr/patchmon-server" >> "$GITHUB_OUTPUT"
 
       # Source-side SBOM. This is not redundant with the image scan below:
