@@ -25,6 +25,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 VERSION=""
+NB_BUILD="${NB_BUILD:-$(cat "$ROOT/NB_BUILD")}"
 IMAGE_TAG="local"
 IMAGE_NAME="${IMAGE_NAME:-patchmon-nb}"
 SKIP_AGENTS="false"
@@ -62,10 +63,15 @@ if [ -z "$VERSION" ]; then
       ./docker/build.sh --version 2.0.3"
 fi
 
-if ! printf '%s' "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+if ! printf '%s' "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(~nb[1-9][0-9]*)?$'; then
   die "version '$VERSION' is not MAJOR.MINOR.PATCH. Local builds must pass a bare
   release version; edge pre-releases like 2.0.3-rc.61 are minted by CI only."
 fi
+
+if ! printf '%s' "$NB_BUILD" | grep -qE '^[1-9][0-9]*$'; then
+  die "NB_BUILD must be a positive integer"
+fi
+if [[ "$VERSION" != *~nb* ]]; then VERSION="${VERSION}~nb${NB_BUILD}"; fi
 
 echo "==> Version: $VERSION"
 

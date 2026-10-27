@@ -139,7 +139,12 @@ runs:
         fi
 
         {
-          echo "version=$VERSION"
+          NB_BUILD="$(cat NB_BUILD)"
+          if ! printf '%s' "$NB_BUILD" | grep -qE '^[1-9][0-9]*$'; then
+            echo "::error::NB_BUILD must be a positive integer"
+            exit 1
+          fi
+          echo "version=${VERSION}~nb${NB_BUILD}"
           echo "is-release=$IS_RELEASE"
         } >> "$GITHUB_OUTPUT"
         echo "Version: $VERSION (release: $IS_RELEASE)"

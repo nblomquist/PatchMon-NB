@@ -15,6 +15,28 @@ import (
 // an edge instance recognise the eventual release as an upgrade. Getting it
 // backwards would strand edge users on a mid-cycle build forever.
 func CompareVersions(v1, v2 string) int {
+	base1, nb1 := splitNBBuild(v1)
+	base2, nb2 := splitNBBuild(v2)
+	if c := compareUpstreamVersions(base1, base2); c != 0 {
+		return c
+	}
+	return compareNumericParts([]int{nb1}, []int{nb2})
+}
+
+// NB builds sort after the same upstream version, before the next upstream version.
+func splitNBBuild(v string) (string, int) {
+	base, build, ok := strings.Cut(strings.TrimSpace(v), "~nb")
+	if !ok {
+		return v, 0
+	}
+	n, err := strconv.Atoi(build)
+	if err != nil || n < 1 {
+		return v, 0
+	}
+	return base, n
+}
+
+func compareUpstreamVersions(v1, v2 string) int {
 	c1, pre1 := splitPreRelease(v1)
 	c2, pre2 := splitPreRelease(v2)
 

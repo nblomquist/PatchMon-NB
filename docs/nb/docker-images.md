@@ -16,15 +16,27 @@
 mise exec -- ./docker/build.sh --tag smoke
 ```
 
-The script stamps the nearest Git tag into the server and agents. If this fork
+The script stamps the nearest Git tag plus `~nbN` into the server and agents.
+`N` comes from the root `NB_BUILD` file (currently `1`). If this fork
 has no tags, fetch the parent's tags locally first:
 
 ```sh
 git fetch https://github.com/PatchMon/PatchMon.git --tags
 ```
 
-Alternatively, supply `--version X.Y.Z`. Do not invent a newer application version
-just to distinguish fork images: use the image name/tag for that distinction.
+Alternatively, supply `--version X.Y.Z`; the fork marker is appended automatically.
+Increase `NB_BUILD` for the next distributed fork build (or override `NB_BUILD`
+for a deliberate local test). Do not invent a newer upstream version just to
+distinguish the fork. Versions remain ordered by upstream version first, then
+the numeric NB build number. The same upstream release without an NB marker sorts
+below its NB builds, so same-release upstream builds do not replace fork agents.
+
+Docker tags cannot contain `~`. For example, build `patchmon-nb:nb1` with an
+application/agent version of `2.1.6~nb1`:
+
+```sh
+mise exec -- ./docker/build.sh --tag nb1
+```
 
 The build compiles Linux, FreeBSD, and Windows agents, embeds the frontend in
 Linux server binaries, and packages the agents into the server image. It needs

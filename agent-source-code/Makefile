@@ -18,7 +18,9 @@ AGENTS_DOCKER=../docker/compose_dev_data/agents
 # refused outright, so those agents can never update. Fall back to a marker
 # version rather than shipping one that is silently unstamped.
 VERSION ?= $(patsubst v%,%,$(shell git describe --tags --abbrev=0 2>/dev/null))
-VERSION_RESOLVED = $(if $(strip $(VERSION)),$(strip $(VERSION)),0.0.0-dev)
+NB_BUILD ?= $(shell cat ../NB_BUILD)
+BASE_VERSION = $(if $(strip $(VERSION)),$(strip $(VERSION)),0.0.0-dev)
+VERSION_RESOLVED = $(if $(findstring ~nb,$(BASE_VERSION)),$(BASE_VERSION),$(BASE_VERSION)~nb$(NB_BUILD))
 VERSION_X = -X patchmon-agent/internal/pkgversion.Version=$(VERSION_RESOLVED)
 # Strip debug info; inject the version resolved above.
 LDFLAGS=-ldflags "-s -w $(VERSION_X)"

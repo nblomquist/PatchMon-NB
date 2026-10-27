@@ -41,7 +41,7 @@ const (
 
 // agentVersionOutputRe parses the version out of `patchmon-agent --version`,
 // which cobra renders as "patchmon-agent version 2.0.3-rc.137".
-var agentVersionOutputRe = regexp.MustCompile(`(?i)(?:PatchMon Agent v|patchmon-agent version |patchmon-agent v|version )?([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)`)
+var agentVersionOutputRe = regexp.MustCompile(`(?i)(?:PatchMon Agent v|patchmon-agent version |patchmon-agent v|version )?([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:~nb[1-9][0-9]*)?)`)
 
 // ServerVersionResponse represents the response from the server when checking for version updates
 type ServerVersionResponse struct {

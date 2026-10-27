@@ -13,8 +13,11 @@ BUILD_OUT_DIR ?= $(BUILD_DIR)
 #
 # Override to test the update path deliberately:  make run VERSION=2.0.1
 VERSION ?= $(patsubst v%,%,$(shell git describe --tags --abbrev=0 2>/dev/null))
+NB_BUILD ?= $(shell cat ../NB_BUILD)
+BASE_VERSION = $(if $(strip $(VERSION)),$(strip $(VERSION)),0.0.0-dev)
+VERSION_RESOLVED = $(if $(findstring ~nb,$(BASE_VERSION)),$(BASE_VERSION),$(BASE_VERSION)~nb$(NB_BUILD))
 VERSION_PKG := github.com/PatchMon/PatchMon/server-source-code/internal/config
-VERSION_X := $(if $(strip $(VERSION)),-X $(VERSION_PKG).DefaultVersion=$(strip $(VERSION)))
+VERSION_X := -X $(VERSION_PKG).DefaultVersion=$(VERSION_RESOLVED)
 
 # Community counts shown in the nav, login footer and setup wizard. The build
 # pipeline reads them from https://patchmon.net/socialstats/<platform> and

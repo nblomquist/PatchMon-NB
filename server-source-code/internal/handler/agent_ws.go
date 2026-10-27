@@ -33,6 +33,7 @@ type OnAgentConnClosed func(apiID string, cutoff time.Time)
 
 // AgentWSHandler handles WebSocket connections from agents.
 type AgentWSHandler struct {
+	onRebootResult    func(context.Context, string, []byte)
 	hosts             *store.HostsStore
 	registry          *agentregistry.Registry
 	onSshProxyMessage OnSshProxyMessage
@@ -45,6 +46,10 @@ type AgentWSHandler struct {
 
 // AgentWSHandlerOption configures AgentWSHandler.
 type AgentWSHandlerOption func(*AgentWSHandler)
+
+func WithOnRebootResult(f func(context.Context, string, []byte)) AgentWSHandlerOption {
+	return func(h *AgentWSHandler) { h.onRebootResult = f }
+}
 
 // WithOnAgentDisconnect sets the callback invoked when an agent disconnects.
 func WithOnAgentDisconnect(f OnAgentDisconnect) AgentWSHandlerOption {
@@ -219,6 +224,16 @@ func (h *AgentWSHandler) ServeWS(w http.ResponseWriter, r *http.Request) {
 		_ = conn.SetReadDeadline(time.Now().Add(agentWSPongWait))
 
 		// Forward SSH proxy messages to SSH terminal handler
+		if h.onRebootResult != nil {
+			var msg struct {
+				Type string `json:"type"`
+			}
+			if json.Unmarshal(message, &msg) == nil && msg.Type == "reboot_result" {
+				h.onRebootResult(connCtx, apiID, message)
+				continue
+			}
+		}
+
 		if h.onSshProxyMessage != nil {
 			var msg struct {
 				Type string `json:"type"`

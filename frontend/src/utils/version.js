@@ -68,6 +68,19 @@ const comparePreRelease = (pre1, pre2) => {
  * @returns {number} 1 if v1 > v2, -1 if v1 < v2, 0 if equal.
  */
 export const compareVersions = (v1, v2) => {
+	const fork = (v) => {
+		const match = stripPrefix(v).match(/^(.*)~nb([1-9]\d*)$/);
+		return match
+			? { base: match[1], build: Number(match[2]) }
+			: { base: v, build: 0 };
+	};
+	const left = fork(v1);
+	const right = fork(v2);
+	const upstream = compareUpstreamVersions(left.base, right.base);
+	return upstream || Math.sign(left.build - right.build);
+};
+
+const compareUpstreamVersions = (v1, v2) => {
 	const a = splitPreRelease(v1);
 	const b = splitPreRelease(v2);
 

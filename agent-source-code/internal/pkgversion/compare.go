@@ -8,6 +8,27 @@ import (
 // Compare returns 1 if a > b, -1 if a < b, 0 if equal. A port of the server's
 // util.CompareVersions: pre-releases rank below their release.
 func Compare(a, b string) int {
+	base1, nb1 := splitNBBuild(a)
+	base2, nb2 := splitNBBuild(b)
+	if c := compareUpstream(base1, base2); c != 0 {
+		return c
+	}
+	return compareNumericParts([]int{nb1}, []int{nb2})
+}
+
+func splitNBBuild(v string) (string, int) {
+	base, build, ok := strings.Cut(strings.TrimSpace(v), "~nb")
+	if !ok {
+		return v, 0
+	}
+	n, err := strconv.Atoi(build)
+	if err != nil || n < 1 {
+		return v, 0
+	}
+	return base, n
+}
+
+func compareUpstream(a, b string) int {
 	c1, pre1 := splitPreRelease(a)
 	c2, pre2 := splitPreRelease(b)
 

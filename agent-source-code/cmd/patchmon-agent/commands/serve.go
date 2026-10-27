@@ -493,6 +493,8 @@ func runServiceLoop(stopCh <-chan struct{}) error {
 				if _, err := updateAgentUnlessPatching(); err != nil {
 					logger.WithError(err).Warn("update_agent failed")
 				}
+			case "reboot_host":
+				go handleHostReboot(m)
 			case "refresh_integration_status":
 				logger.Info("Refreshing integration status on server request...")
 				go reportIntegrationStatus(ctx)
@@ -1380,6 +1382,9 @@ func startIntegrationMonitoring(ctx context.Context, eventChan chan<- interface{
 }
 
 type wsMsg struct {
+	rebootRequestID           string
+	rebootExpiresAt           int64
+	rebootConn                *websocket.Conn
 	kind                      string
 	interval                  int
 	complianceScanInterval    int
@@ -1878,6 +1883,8 @@ func connectOnce(out chan<- wsMsg, backoff *time.Duration) (connected bool, err 
 		}
 		var payload struct {
 			Type                      string                 `json:"type"`
+			RebootRequestID           string                 `json:"request_id"`
+			RebootExpiresAt           int64                  `json:"expires_at"`
 			UpdateInterval            int                    `json:"update_interval"`
 			ComplianceScanInterval    int                    `json:"compliance_scan_interval"`
 			PackageCacheRefreshMode   string                 `json:"package_cache_refresh_mode"`
@@ -1932,6 +1939,8 @@ func connectOnce(out chan<- wsMsg, backoff *time.Duration) (connected bool, err 
 		case "update_agent":
 			logger.Info("update_agent received")
 			dispatchWSMessage(out, wsMsg{kind: "update_agent"})
+		case "reboot_host":
+			dispatchWSMessage(out, wsMsg{kind: "reboot_host", rebootRequestID: payload.RebootRequestID, rebootExpiresAt: payload.RebootExpiresAt, rebootConn: conn})
 		case "refresh_integration_status":
 			logger.Info("refresh_integration_status received")
 			dispatchWSMessage(out, wsMsg{kind: "refresh_integration_status"})

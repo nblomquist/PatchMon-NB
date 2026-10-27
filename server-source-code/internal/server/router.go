@@ -233,7 +233,9 @@ func NewRouter(ctx context.Context, cfg *config.Config, db *database.DB, rdb *re
 	// the AgentWSHandler is wired up.
 	patchRunsStore := store.NewPatchRunsStore(dbProvider)
 	var agentWsHandler *handler.AgentWSHandler
+	rebootHandler := handler.NewHostRebootHandler(hostsStore, registry, redisResolver, auditLogsStore)
 	agentOpts := []handler.AgentWSHandlerOption{
+		handler.WithOnRebootResult(rebootHandler.HandleResult),
 		handler.WithOnAgentDisconnect(handler.NewAgentDisconnectHandler(dbProvider, hostsStore, patchRunsStore, registry, notifyEmit, log)),
 		handler.WithOnAgentConnect(handler.NewAgentConnectHandler(dbProvider, queueClient, queueInspector, integrationStatusStore, notifyEmit, log)),
 	}
@@ -573,6 +575,8 @@ func NewRouter(ctx context.Context, cfg *config.Config, db *database.DB, rdb *re
 			r.With(middleware.RequirePermission("can_manage_hosts", permissionsStore)).Post("/hosts/{hostId}/refresh-docker", hostsHandler.RefreshDocker)
 			r.With(middleware.RequirePermission("can_manage_hosts", permissionsStore), middleware.RateLimitPerContext(redisResolver, "docker-image-check", 6, time.Minute)).Post("/hosts/{hostId}/docker-image-check", hostsHandler.DockerImageCheck)
 			r.With(middleware.RequirePermission("can_manage_hosts", permissionsStore)).Post("/hosts/{hostId}/force-agent-update", hostsHandler.ForceAgentUpdate)
+			r.With(middleware.RequirePermission("can_manage_hosts", permissionsStore)).Post("/hosts/{hostId}/reboot", rebootHandler.Reboot)
+			r.With(middleware.RequirePermission("can_manage_hosts", permissionsStore)).Get("/hosts/{hostId}/reboot", rebootHandler.Status)
 			r.With(middleware.RequirePermission("can_manage_hosts", permissionsStore)).Delete("/hosts/{hostId}", hostsHandler.Delete)
 			r.With(middleware.RequirePermission("can_manage_hosts", permissionsStore)).Delete("/hosts/bulk", hostsHandler.BulkDelete)
 			r.With(middleware.RequirePermission("can_view_packages", permissionsStore)).Get("/packages/categories/list", packagesHandler.GetCategories)

@@ -21,13 +21,13 @@ import (
 // AgentVersionRe parses a version out of an agent binary's own output. Dropping
 // the pre-release group makes the server advertise 2.0.3 to an agent reporting
 // 2.0.3-rc.61, which then re-downloads itself on every check.
-const AgentVersionRe = `(?i)(?:PatchMon Agent v|patchmon-agent v|version )?([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)`
+const AgentVersionRe = `(?i)(?:PatchMon Agent v|patchmon-agent v|version )?([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:~nb[1-9][0-9]*)?)`
 
 var (
 	agentVersionRe = regexp.MustCompile(AgentVersionRe)
 	// The -X value every build path stamps in, as recorded in the binary's build info.
-	ldflagsVersionRe = regexp.MustCompile(`pkgversion\.Version=v?([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)`)
-	moduleVersionRe  = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$`)
+	ldflagsVersionRe = regexp.MustCompile(`pkgversion\.Version=v?([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:~nb[1-9][0-9]*)?)`)
+	moduleVersionRe  = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:~nb[1-9][0-9]*)?$`)
 )
 
 // agentBinaryCacheTTL bounds how long a cached result can outlive an in-place

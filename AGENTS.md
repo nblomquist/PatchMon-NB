@@ -16,8 +16,8 @@
 
 ## Boundaries and entrypoints
 
-- This is the PatchMon-NB fork. Fork plans live in `docs/nb/`; the pending-reboot
-  feature is only planned in `docs/nb/host-reboot.md`, not implemented.
+- This is the PatchMon-NB fork. Reboot behaviour, safety limits, rollout work,
+  and verification notes live in `docs/nb/host-reboot.md`.
 - Two independent Go modules: run Go commands inside `server-source-code/` or
   `agent-source-code/`, not the repository root. Both require Go 1.26.10.
   Keep the existing module paths; they are also used in linker version flags.
@@ -92,8 +92,16 @@
   copies ignored `server-prebuilt/` and `agents-prebuilt/`, it does not compile
   them. The script builds both modules and the embedded UI first.
 - Build versions come from the nearest Git tag or explicit `VERSION`, not
-  `package.json`. Local Docker builds require bare `MAJOR.MINOR.PATCH`; CI has
-  its own prerelease logic in `.github/actions/release-context/`.
+  `package.json`. Root `NB_BUILD` is the committed fork build number; Make,
+  Docker, and release-context append `~nbN` (for example `2.1.6~nb1`) to both
+  server and agent versions. Increment it before distributing a changed fork
+  build. Docker tags cannot contain `~`; use `:nb1` or `:2.1.6-nb1` for images.
+- Server, agent, and frontend version comparators must agree:
+  `2.1.6 < 2.1.6~nb1 < 2.1.6~nb2 < 2.1.7`. Keep agent binary/output parsers
+  and config-version validation suffix-aware; dropping `~nbN` causes update loops.
+- Reboot requests expire after 30 seconds. Agent tests must inject fake command
+  runners: never execute real shutdown/reboot commands or install an agent on
+  the development host. A successful WebSocket send is not reboot completion.
 - The image serves bundled agents from `/app/agents` (`AGENTS_DIR`); replacing
   the server container does not itself update installed agents. Rebuild the
   bundled agents when changing their command protocol.

@@ -7,7 +7,7 @@ import (
 
 var (
 	versionPrefixRe = regexp.MustCompile(`^\d+\.\d+\.\d+`)
-	versionStringRe = regexp.MustCompile(`^\d+\.\d+\.\d+[0-9A-Za-z.+-]*$`)
+	versionStringRe = regexp.MustCompile(`^\d+\.\d+\.\d+[0-9A-Za-z.+-]*(?:~nb[1-9][0-9]*)?$`)
 	hostIDRe        = regexp.MustCompile(`^[A-Za-z0-9-]{1,64}$`)
 )
 

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -17,14 +18,14 @@ var (
 	agentUpdater        = updateAgent
 )
 
-const msgAgentUpdating = "Agent update in progress, retry shortly"
+const msgAgentUpdating = "Agent update or reboot in progress, retry shortly"
 
 // beginPatchRun marks a patch run active, or refuses it while an agent update is running,
 // since the update ends the process. The returned func ends the run and applies any agent
 // update that arrived meanwhile, after the run's post-patch report.
 func beginPatchRun() (end func(), ok bool) {
 	patchUpdateMu.Lock()
-	if agentUpdating {
+	if agentUpdating || rebootPending {
 		patchUpdateMu.Unlock()
 		return nil, false
 	}
@@ -51,6 +52,10 @@ func beginPatchRun() (end func(), ok bool) {
 // updateAgentUnlessPatching updates the agent now, or defers it while a patch run is active.
 func updateAgentUnlessPatching() (deferred bool, err error) {
 	patchUpdateMu.Lock()
+	if rebootPending {
+		patchUpdateMu.Unlock()
+		return false, errors.New("reboot in progress; agent update refused")
+	}
 	if activePatchRuns > 0 {
 		agentUpdateDeferred = true
 		patchUpdateMu.Unlock()

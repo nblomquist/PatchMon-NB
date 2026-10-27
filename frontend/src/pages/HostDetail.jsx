@@ -52,6 +52,9 @@ import {
 	ConfigVersionValue,
 	HostIdentityBanners,
 } from "../components/host/HostIdentity";
+import HostRebootControls, {
+	HostRebootBanner,
+} from "../components/host/HostRebootControls";
 import InlineEdit from "../components/InlineEdit";
 import InlineMultiGroupEdit from "../components/InlineMultiGroupEdit";
 import { PackageListDisplay } from "../components/PackageListDisplay";
@@ -1916,7 +1919,7 @@ const HostDetail = () => {
 						)}
 					</div>
 				</div>
-				<div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+				<div className="flex flex-col md:flex-row md:items-center gap-2 w-full md:w-auto">
 					{integrationsData?.pending_config_exists && (
 						<button
 							type="button"
@@ -1966,6 +1969,13 @@ const HostDetail = () => {
 								<span className="sm:hidden">Patch</span>
 							</button>
 						)}
+						{canManageHosts() && (
+							<HostRebootControls
+								key={host.id}
+								host={host}
+								connected={Boolean(wsStatus?.connected)}
+							/>
+						)}
 						{reportMessage.text && (
 							<p className="text-xs mt-1.5 text-secondary-600 dark:text-white">
 								{reportMessage.text}
@@ -1977,7 +1987,7 @@ const HostDetail = () => {
 							</p>
 						)}
 					</div>
-					<div className="flex items-center gap-2 flex-shrink-0">
+					<div className="flex items-center gap-2 flex-shrink-0 self-end md:self-auto">
 						<button
 							type="button"
 							onClick={() => setShowCredentialsModal(true)}
@@ -2019,6 +2029,8 @@ const HostDetail = () => {
 				canManage={canManageHosts()}
 				onRegenerateCredentials={() => setShowCredentialsModal(true)}
 			/>
+
+			<HostRebootBanner host={host} connected={Boolean(wsStatus?.connected)} />
 
 			{/* Package Statistics Cards */}
 			<div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
