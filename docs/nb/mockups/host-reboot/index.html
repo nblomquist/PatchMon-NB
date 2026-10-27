@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PatchMon-NB · Host reboot design review</title>
+  <style>
+    :root{color-scheme:light;--paper:#f5f4ef;--ink:#242923;--muted:#686e66;--line:#dddfd5;--orange:#a04c17;--green:#426046}
+    *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:15px;line-height:1.6}button,a{-webkit-tap-highlight-color:transparent}button{font:inherit}a{color:inherit}button:focus-visible,a:focus-visible{outline:3px solid #bf6c2e;outline-offset:4px}button{cursor:pointer}img{display:block;max-width:100%}.wrap{max-width:1440px;margin:auto;padding:0 40px}
+    .top{display:flex;justify-content:space-between;align-items:center;padding:24px 0;border-bottom:1px solid var(--line);gap:20px}.brand{font-weight:750;letter-spacing:-.04em;font-size:20px}.brand span{font-weight:450;color:var(--muted);letter-spacing:.02em;font-size:12px;margin-left:13px;padding-left:14px;border-left:1px solid #bfc4b7}.top nav{display:flex;gap:24px;font-size:13px}.top a{text-decoration:none}.top a:hover{color:var(--orange)}
+    header.hero{padding:58px 0 40px;display:grid;grid-template-columns:1.65fr 1fr;gap:60px;align-items:end}.eyebrow{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--orange)}.dot{width:7px;height:7px;background:var(--orange);border-radius:50%}h1{font-size:clamp(36px,4.8vw,64px);line-height:1.08;font-weight:650;letter-spacing:-.055em;margin:18px 0 20px;max-width:800px}.intro{font-size:17px;line-height:1.7;color:var(--muted);max-width:690px;margin:0}.scope{border-left:2px solid #c8cdbf;padding-left:22px;color:var(--muted);font-size:13px}.scope strong{display:block;color:var(--ink);font-size:14px;margin-bottom:7px}.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}.tag{border:1px solid var(--line);border-radius:30px;padding:4px 11px;font-size:11px;color:var(--muted);background:#fff8}
+    section{margin:38px 0 58px}.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:20px}.number{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:650}.section-head h2{font-size:26px;letter-spacing:-.035em;line-height:1.2;margin:8px 0 0;font-weight:650}.section-note{font-size:12px;color:var(--muted);text-align:right;margin:0;max-width:340px}.switcher{display:flex;padding:5px;background:#e6e8df;border:1px solid #daddd1;border-radius:9px;gap:4px}.switcher button{border:0;border-radius:5px;background:transparent;padding:10px 18px;font-size:13px;color:#586051}.switcher button[aria-pressed="true"]{background:#fff;box-shadow:0 1px 4px #25302014;color:#262d25;font-weight:650}.switcher button:hover{background:#ffffff90}
+    figure{margin:0}.frame{border:1px solid #30354b;border-radius:10px;overflow:hidden;background:#101326;box-shadow:0 15px 40px #18211712}.chrome{height:38px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;background:#171b30;color:#afb7d0;font:11px ui-monospace,SFMono-Regular,monospace;gap:12px;border-bottom:1px solid #30354b}.chrome .dots{display:flex;gap:5px}.chrome i{display:block;width:6px;height:6px;background:#454d6e;border-radius:50%}.chrome-label{flex:1;margin-left:8px}.chrome small{font:10px system-ui;text-transform:uppercase;letter-spacing:.08em;color:#d2b38c}.image-button{border:0;padding:0;background:#0d1020;display:block;width:100%;position:relative;text-align:left;cursor:zoom-in}.image-button>img{width:100%;height:auto}.zoom-hint{position:absolute;right:15px;top:15px;background:#080b20e8;border:1px solid #656c89;border-radius:5px;color:#e2e6f3;padding:5px 10px;font-size:11px;opacity:0;transition:opacity .15s}.image-button:hover .zoom-hint,.image-button:focus-visible .zoom-hint{opacity:1}.caption{display:grid;grid-template-columns:1fr 1fr;gap:30px;padding:20px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}.caption h3{font-size:16px;color:var(--ink);margin:0 0 4px;font-weight:650}.caption p{margin:0}.caption strong{font-weight:600;color:var(--ink)}.caption .tradeoff{align-self:center}
+    .states{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.card{border:1px solid var(--line);border-radius:9px;background:#fff;overflow:hidden}.card .image-button{border-bottom:1px solid var(--line)}.card .image-button img{aspect-ratio:1.4;object-fit:cover;object-position:top}.card.confirm .image-button img{object-fit:contain;background:#0b0d1f}.card-copy{padding:19px 20px 22px}.card h3{font-size:16px;font-weight:650;letter-spacing:-.02em;margin:0 0 7px}.card p{font-size:13px;color:var(--muted);margin:0}.state-tag{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--orange);margin-bottom:8px;font-weight:700}
+    .mobile-section{display:grid;grid-template-columns:1fr 1fr;align-items:center;background:#e9ece3;border:1px solid #d9dfd0;border-radius:12px;padding:36px 48px;gap:48px}.mobile-section h2{font-size:36px;line-height:1.15;letter-spacing:-.04em;margin:14px 0 18px;max-width:430px}.mobile-section p{color:var(--muted);max-width:460px}.mobile-section ul{padding-left:18px;font-size:14px;color:#4c5749;line-height:2}.phone{max-width:300px;justify-self:center;padding:7px;background:#151a2e;border:1px solid #4d546c;border-radius:22px;box-shadow:0 15px 30px #1c251c22;overflow:hidden}.phone .image-button,.phone img{border-radius:15px}.mobile-section .mobile-note{font-size:11px;margin-top:20px}.originals{display:grid;grid-template-columns:1fr 1fr;gap:20px}.originals .card .image-button img{aspect-ratio:1.6;object-fit:cover;object-position:top}.originals h3{margin-bottom:4px}
+    .discussion{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:28px 0;display:grid;grid-template-columns:.8fr 1fr 1fr;gap:35px}.discussion h2{font-size:25px;line-height:1.2;letter-spacing:-.03em;margin:7px 0}.discussion p{font-size:13px;color:var(--muted);margin:0}.discussion b{display:block;color:var(--ink);font-size:14px;margin-bottom:7px}footer.site-footer{display:flex;justify-content:space-between;gap:20px;color:var(--muted);font-size:11px;padding:25px 0 35px}
+    dialog{background:#101426;color:#e6eaf7;border:1px solid #4e5674;padding:0;border-radius:10px;width:min(96vw,1650px);max-width:96vw;max-height:94vh;box-shadow:0 25px 100px #0008}dialog::backdrop{background:#060811d9;backdrop-filter:blur(4px)}.viewer-head{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;gap:15px;padding:12px 18px;background:#191f35;border-bottom:1px solid #414965;z-index:1}.viewer-head h2{font-size:14px;font-weight:500;margin:0}.viewer-head button{color:#f1f3ff;border:1px solid #535c7b;border-radius:5px;background:#2b3450;padding:5px 12px;font-size:12px}.viewer-image{width:100%;height:auto;max-width:none}.viewer-image.mobile{width:390px;max-width:100%;margin:auto}.viewer-footer{font-size:11px;padding:10px 18px;color:#aeb9d7}.viewer-footer a{color:#e8d3b8}
+    @media(max-width:850px){.wrap{padding:0 22px}header.hero{grid-template-columns:1fr;gap:25px;padding:36px 0 18px}.scope{max-width:700px}.section-head{align-items:start;flex-direction:column;gap:16px}.section-note{text-align:left}.states{grid-template-columns:1fr}.card .image-button img{aspect-ratio:1.7}.mobile-section{padding:28px;gap:28px}.mobile-section h2{font-size:30px}.discussion{grid-template-columns:1fr}.caption{gap:15px}.originals{gap:15px}.top nav{gap:14px}}
+    @media(max-width:560px){.wrap{padding:0 16px}.top nav{display:none}h1{font-size:42px}.intro{font-size:15px}.scope{font-size:12px}.section-head h2{font-size:24px}.switcher{width:100%}.switcher button{padding:10px 9px;flex:1;font-size:12px}.caption{grid-template-columns:1fr}.mobile-section{grid-template-columns:1fr;padding:24px}.originals{grid-template-columns:1fr}.chrome{font-size:9px}.chrome small{display:none}.section-note{font-size:12px}footer.site-footer{flex-direction:column;gap:5px}.zoom-hint{opacity:1;font-size:10px;top:8px;right:8px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.zoom-hint{transition:none}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top"><div class="brand">PatchMon<span>NB / DESIGN NOTES</span></div><nav aria-label="Review sections"><a href="#placement">Placement</a><a href="#states">Safety & states</a><a href="#originals">Current UI</a></nav></div>
+    <header class="hero">
+      <div><div class="eyebrow"><span class="dot"></span>Host reboot · Design review 02</div><h1>Always available.<br>Clear when required.</h1><p class="intro">A compact reboot button stays in the header, whether or not a restart is pending. A separate banner explains when installed updates need one—especially security updates.</p><div class="meta"><span class="tag">8 screenshots</span><span class="tag">Same-sized toolbar buttons</span><span class="tag">Desktop + mobile</span></div></div>
+      <aside class="scope"><strong>Pictures to discuss, not a shipped feature.</strong>The current-page captures use synthetic demo hosts in a local PatchMon instance. Proposed controls and connected states are visual simulations. No agent was enrolled and no reboot command was sent.</aside>
+    </header>
+
+    <main>
+      <section id="placement" aria-labelledby="placement-title">
+        <div class="section-head"><div><div class="number">01 / One action, three states</div><h2 id="placement-title">The button stays. The context changes.</h2></div><div class="switcher" role="group" aria-label="Choose update state"><button type="button" data-design="none" aria-pressed="false">No restart pending</button><button type="button" data-design="updates" aria-pressed="false">Other updates</button><button type="button" data-design="security" aria-pressed="true">Security updates</button></div></div>
+        <figure>
+          <div class="frame"><div class="chrome"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="chrome-label">Host detail / web-01 · demo</span><small id="preview-badge">Security restart pending · mockup</small></div><button class="image-button" type="button" data-zoom id="main-image-button" aria-label="Enlarge security restart state"><img id="main-image" src="assets/security-required.png" width="1536" height="1100" alt="Compact Reboot button in the header with a separate security restart banner and no duplicate banner action"><span class="zoom-hint">View full size ↗</span></button></div>
+          <figcaption class="caption" aria-live="polite"><div><h3 id="preview-title">Security updates / Make the unfinished step explicit.</h3><p id="preview-description">The banner explains that an installed kernel security update still needs a reboot. A shield and Security label distinguish it from ordinary updates.</p></div><p class="tradeoff" id="preview-tradeoff">One reboot action, always in the header. The banner communicates the reason and urgency; it does not add a second, oversized button.</p></figcaption>
+        </figure>
+      </section>
+
+      <section id="states" aria-labelledby="states-title">
+        <div class="section-head"><div><div class="number">02 / Safety & availability</div><h2 id="states-title">Manual means available—not accidental.</h2></div><p class="section-note">A pending-update flag is not required.<br>Connection, permissions, and operation guards still apply.</p></div>
+        <div class="states">
+          <article class="card confirm"><button class="image-button" type="button" data-zoom aria-label="Enlarge manual reboot confirmation"><img loading="lazy" src="assets/confirmation.png" width="1536" height="1100" alt="Manual reboot confirmation explaining that no update requires a restart, while still allowing a confirmed reboot"><span class="zoom-hint">View full size ↗</span></button><div class="card-copy"><span class="state-tag">Confirmation / Any time</span><h3>No restart required? Still your call.</h3><p>Manual reboots are allowed. The confirmation identifies the host, explains downtime, and makes clear that this reboot is operator-requested rather than update-required.</p></div></article>
+          <article class="card"><button class="image-button" type="button" data-zoom aria-label="Enlarge agent offline state"><img loading="lazy" src="assets/state-offline.png" width="1536" height="1100" alt="Security restart banner remains visible while the permanent header Reboot button is disabled because the agent is offline"><span class="zoom-hint">View full size ↗</span></button><div class="card-copy"><span class="state-tag">Unavailable / Offline</span><h3>Always visible, not queued for later.</h3><p>The header button stays in place but is disabled when the agent cannot receive the request. The banner retains the security warning and explains the connection issue.</p></div></article>
+          <article class="card"><button class="image-button" type="button" data-zoom aria-label="Enlarge available manual reboot state"><img loading="lazy" src="assets/header-always.png" width="1536" height="1100" alt="Host with no pending reboot, no contextual banner, and an enabled compact Reboot button in its header"><span class="zoom-hint">View full size ↗</span></button><div class="card-copy"><span class="state-tag">Available / No pending restart</span><h3>Quiet page. Reboot still available.</h3><p>No banner when an update does not require a restart. Reboot remains enabled, in the same place and normal toolbar styling—not a larger call to action.</p></div></article>
+        </div>
+      </section>
+
+      <section class="mobile-section" aria-labelledby="mobile-title">
+        <div><div class="number">03 / Smaller screens</div><h2 id="mobile-title">Same button.<br>Same place.</h2><p>Fetch, Patch, and Reboot share one row of equally sized header actions. Secondary tools sit below. The security notice remains a separate message, not a large reboot control.</p><ul><li>Reboot button matches the existing 38px height.</li><li>Banner only when an installed update needs a restart.</li><li>Manual reboots still require confirmation.</li></ul><p class="mobile-note">390 × 1000 viewport · revision 02 · click to enlarge</p></div>
+        <div class="phone"><button class="image-button" type="button" data-zoom aria-label="Enlarge mobile design"><img loading="lazy" src="assets/mobile.png" width="390" height="1000" alt="Mobile header with equally sized Fetch, Patch, and Reboot buttons above a security restart notice"><span class="zoom-hint">View full size ↗</span></button></div>
+      </section>
+
+      <section id="originals" aria-labelledby="originals-title">
+        <div class="section-head"><div><div class="number">04 / Reference captures</div><h2 id="originals-title">What is there today.</h2></div><p class="section-note">Real UI, synthetic data. No mock reboot controls.<br>The demo agents are genuinely offline.</p></div>
+        <div class="originals">
+          <article class="card"><button class="image-button" type="button" data-zoom aria-label="Enlarge current host list"><img loading="lazy" src="assets/current-hosts.png" width="1536" height="1100" alt="Current PatchMon host list with four synthetic hosts and two pending reboots"><span class="zoom-hint">View full size ↗</span></button><div class="card-copy"><h3>Host list</h3><p>The existing Needs Reboots card provides a way to find affected machines. No bulk reboot control is proposed.</p></div></article>
+          <article class="card"><button class="image-button" type="button" data-zoom aria-label="Enlarge current host detail"><img loading="lazy" src="assets/current-host-detail.png" width="1536" height="1100" alt="Current host detail page showing a Reboot pending pill but no reboot action"><span class="zoom-hint">View full size ↗</span></button><div class="card-copy"><h3>Host detail</h3><p>Reboot pending is already reported. The missing piece is a safe, explicit action on this page.</p></div></article>
+        </div>
+      </section>
+
+      <section class="discussion" aria-labelledby="discussion-title"><div><div class="number">Next / Your call</div><h2 id="discussion-title">How does this<br>balance feel?</h2></div><p><b>Button & notice</b>The compact header action is always present. Does the security banner stand out enough without making the whole page feel urgent? Is “Reboot” clear enough as the short toolbar label?</p><p><b>Security & confidence</b>The security reason here is synthetic. Implementation must use confirmed update metadata before labelling a pending restart security-related. Unknown reasons should get a generic reboot-required notice.</p></section>
+    </main>
+    <footer class="site-footer"><span>PatchMon-NB · Browser-only design study · 27 October 2026</span><span>Local assets only. Works directly from this HTML file; no server or login needed.</span></footer>
+  </div>
+
+  <dialog id="viewer" aria-labelledby="viewer-title"><div class="viewer-head"><h2 id="viewer-title">Screenshot</h2><button type="button" id="viewer-close">Close · Esc</button></div><img id="viewer-image" class="viewer-image" alt=""><div class="viewer-footer">Screenshot only; controls in the image are not interactive. <a id="original-link" href="assets/security-required.png" target="_blank" rel="noopener">Open original image ↗</a></div></dialog>
+  <script>
+    const designs = {
+      none: { image: 'header-always.png', badge: 'No pending restart · mockup', title: 'No restart pending / Reboot is still available.', description: 'A normal-sized Reboot button stays beside Fetch Report and Patch all. No pending-reboot flag is needed to use it.', tradeoff: 'No banner, no extra emphasis. The host can still be rebooted manually after confirmation.', alt: 'No pending restart and no banner, with an enabled Reboot header button' },
+      updates: { image: 'restart-required.png', badge: 'Other updates need a restart · mockup', title: 'Other updates / Explain what needs finishing.', description: 'An amber banner reports installed system library updates that need a restart. The reboot action stays in its usual header position.', tradeoff: 'This covers non-security updates and can also explain a non-security kernel update. Do not infer security impact from a generic reboot flag.', alt: 'Installed system library update restart notice with a normal-sized header Reboot button' },
+      security: { image: 'security-required.png', badge: 'Security restart pending · mockup', title: 'Security updates / Make the unfinished step explicit.', description: 'The banner explains that an installed kernel security update still needs a reboot. A shield and Security label distinguish it from ordinary updates.', tradeoff: 'One reboot action, always in the header. The banner communicates the reason and urgency; it does not add a second, oversized button.', alt: 'Compact Reboot header button with a separate security restart notice' }
+    };
+    const image = document.getElementById('main-image');
+    document.querySelectorAll('[data-design]').forEach(button => {
+      button.addEventListener('click', () => {
+        const design = designs[button.dataset.design];
+        document.querySelectorAll('[data-design]').forEach(other => { other.setAttribute('aria-pressed', String(other === button)); });
+        image.src = `assets/${design.image}`;
+        image.alt = design.alt;
+        document.getElementById('main-image-button').setAttribute('aria-label', `Enlarge ${design.title}`);
+        document.getElementById('preview-badge').textContent = design.badge;
+        document.getElementById('preview-title').textContent = design.title;
+        document.getElementById('preview-description').textContent = design.description;
+        document.getElementById('preview-tradeoff').textContent = design.tradeoff;
+      });
+    });
+    const viewer = document.getElementById('viewer');
+    const viewerImage = document.getElementById('viewer-image');
+    document.querySelectorAll('[data-zoom]').forEach(button => {
+      button.addEventListener('click', () => {
+        const source = button.querySelector('img');
+        viewerImage.src = source.src;
+        viewerImage.alt = source.alt;
+        viewerImage.classList.toggle('mobile', source.getAttribute('width') === '390');
+        document.getElementById('viewer-title').textContent = source.alt;
+        document.getElementById('original-link').href = source.src;
+        viewer.showModal();
+      });
+    });
+    document.getElementById('viewer-close').addEventListener('click', () => viewer.close());
+    viewer.addEventListener('click', event => { if (event.target === viewer) { const bounds = viewer.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) viewer.close(); } });
+  </script>
+</body>
+</html>

@@ -1,10 +1,17 @@
-# Reboot hosts when required
+# Manual host reboots and pending-update notices
 
 ## Goal
 
-Add a **Reboot host** button to the host detail page. Enable it only when the
-host reports that a restart/reboot is required and its agent is connected.
-Require confirmation before sending the request.
+Keep a normal-sized **Reboot** button in the host detail header. Allow manual
+reboots even when no restart is pending, provided the user has permission, the
+agent is connected and supports the command, and no conflicting operation is
+running. Require confirmation before sending the request.
+
+Show a separate contextual banner when installed kernel or other updates require
+a restart, with extra emphasis for confirmed security-related updates. Do not
+put a second, larger reboot action in that banner. With no pending restart, omit
+the banner but keep the header action available. See the
+[revision 02 mockups](mockups/host-reboot/index.html).
 
 This is a plan, not an implemented feature. No machines should be rebooted as
 part of automated tests.
@@ -46,8 +53,8 @@ distribution path still need to be designed and verified.
 
 - [ ] Add a host reboot endpoint and a frontend API helper.
 - [ ] Require host-management permission and preserve tenant/host isolation.
-- [ ] Reject requests when no reboot is pending, the agent is offline, or the
-  agent does not support the command.
+- [ ] Allow requests whether or not a reboot is pending. Reject requests when
+  the agent is offline or does not support the command.
 - [ ] Block reboot during active patching; review conflicts with agent updates
   and other host-changing work.
 - [ ] Send a bounded, explicit command through the existing agent connection.
@@ -65,18 +72,23 @@ distribution path still need to be designed and verified.
 - [ ] Use fixed executable/argument lists, not user-provided shell commands.
 - [ ] Check local operation guards so a reboot cannot interrupt patching or an
   agent update if server-side state is stale.
-- [ ] Decide how to handle stale reboot status, including pending status from a
-  patch run that may differ from the local detector's verdict.
+- [ ] Do not require a local pending-reboot flag for an operator-requested reboot.
+  Treat detector/patch-run status as explanatory context, not permission to reboot.
 - [ ] Report command acceptance or execution failure before the connection is
   lost, where possible. Define what acceptance actually guarantees.
 - [ ] Prevent duplicate commands from scheduling repeated reboots.
 
 ### 4. Add the host-page controls
 
-- [ ] Show a Reboot host button to users with host-management permission.
-- [ ] Disable it unless reboot is required, the agent is connected and supports
-  the command, and no conflicting operation or request is in progress.
-- [ ] Explain disabled states and show the reported reboot reason.
+- [ ] Always show a compact Reboot header button to users with host-management
+  permission, matching the existing toolbar button sizing and styling.
+- [ ] Disable it only for offline/unsupported agents or conflicting operations
+  and requests, not because no restart is pending. Explain disabled states.
+- [ ] Show the reported reboot reason in a separate banner only when a restart
+  is required. Distinguish kernel and other update reasons where known.
+- [ ] Establish trustworthy security-update/reboot linkage before showing a
+  Security label; a generic reboot flag alone is not evidence. Retain a generic
+  warning when security impact is unknown.
 - [ ] Require a confirmation dialog naming the host and warning about downtime.
 - [ ] Show request progress and errors without claiming reboot completion just
   because the server sent the command.
@@ -85,9 +97,10 @@ distribution path still need to be designed and verified.
 
 ### 5. Verify and document
 
-- [ ] Frontend tests: enabled/disabled states, permissions, confirmation,
-  cancellation, duplicate clicks, and request failures.
-- [ ] Server tests: permissions, host isolation, pending reboot requirement,
+- [ ] Frontend tests: manual reboot with no pending flag, contextual/security
+  banner visibility, disabled states, permissions, confirmation, cancellation,
+  duplicate clicks, and request failures.
+- [ ] Server tests: permissions, host isolation, reboot with/without a pending flag,
   offline/unsupported agents, active patching, and delivery failures.
 - [ ] Agent tests: parsing, operation guards, duplicate handling, platform command
   selection, and execution failures. Inject a fake command runner so tests never
