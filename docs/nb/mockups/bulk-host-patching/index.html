@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PatchMon-NB · Patch Selected design</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root{color-scheme:dark;font:14px/1.5 Inter,system-ui,sans-serif;color:#e5e9f5;background:#101426}*{box-sizing:border-box}body{margin:0}button,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #a5b4fc;outline-offset:3px}a{color:#b2bcff}.review{padding:14px 24px;background:#25213b;border-bottom:1px solid #66547f;color:#e2d9f4}.review strong{margin-right:12px}.layout{display:flex;min-height:90vh}aside{width:200px;flex-shrink:0;background:#14182c;border-right:1px solid #30364c;padding:25px 20px}aside h2{margin:0 0 35px}aside p{padding:10px;border-radius:6px;color:#aeb7ce}aside .active{background:#303455;color:white}main{padding:32px;max-width:1450px;width:100%;min-width:0}h1{font-size:28px;margin:0}h2{margin:0;font-size:21px}p{color:#aeb7ce}.heading{display:flex;justify-content:space-between;gap:12px;align-items:center}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:25px 0}.card,.panel{background:#181d33;border:1px solid #333a53;border-radius:9px}.card{padding:16px;color:#aeb7ce}.card b{display:block;color:white;font-size:25px;margin-top:6px}.panel{padding:18px}.toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px}.toolbar .count{margin-right:auto}button,.btn{border:1px solid #4a536f;background:#242c46;border-radius:6px;padding:9px 13px;color:#e5e9f5;min-height:40px}.primary{background:#6260dc;border-color:#8b87f3;color:white}.danger{background:#692a3c;border-color:#a44a60}.muted{color:#aeb7ce}.small{font-size:12px}.drop{position:relative}.drop>button{display:flex;gap:18px;align-items:center}.menu{position:absolute;top:calc(100% + 7px);left:0;width:260px;background:#232a43;border:1px solid #556080;padding:6px;border-radius:8px;z-index:2;box-shadow:0 12px 28px #0006}.menu button{display:block;width:100%;text-align:left;border:0;background:none}.menu button:hover{background:#363f60}.menu small{display:block;color:#b8c1d9;font-size:11px;margin-top:3px}.search{padding:10px 12px;border:1px solid #414a65;border-radius:6px;color:#aeb7ce;margin-bottom:16px}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;text-align:left;white-space:nowrap}th{font-size:12px;color:#aeb7ce;font-weight:500}th,td{padding:14px 12px;border-bottom:1px solid #30384e}td:first-child,th:first-child{width:35px;padding-left:0}input{accent-color:#8b87f3;width:17px;height:17px}td strong{display:block}td small{display:block;color:#97a5c3}.pill{border-radius:20px;padding:3px 8px;font-size:11px;background:#183e36;color:#8fdec1}.pill.off{background:#3a3145;color:#d6badc}.security{color:#f1bd76}.note{border-left:3px solid #9b8bf4;padding:12px 16px;background:#22243f;margin:22px 0}.note p{margin:4px 0}.footer{margin-top:24px;font-size:12px;color:#9ca9c5}.hidden,[hidden]{display:none!important}dialog{color:#e5e9f5;background:#181d33;border:1px solid #535e80;border-radius:12px;width:min(760px,calc(100% - 24px));padding:0;max-height:90vh}dialog::backdrop{background:#060916c9}dialog header{padding:22px;border-bottom:1px solid #333a53;display:flex;justify-content:space-between;gap:15px}dialog header p{margin:5px 0 0}.body{padding:22px}.steps{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:#7e8aa7;margin-bottom:18px}.steps b{color:#c1b9ff}.summary{display:flex;gap:9px;flex-wrap:wrap;margin:16px 0}.summary span{padding:6px 10px;background:#29334c;border-radius:5px}.host-row{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid #333a53}.host-row .reason{text-align:right;color:#aeb7ce;font-size:12px}.host-row .ready{color:#8fdec1}.settings{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}.settings label{display:flex;flex-direction:column;gap:7px;color:#b3bed7}.settings select{background:#252d46;color:white;border:1px solid #535e80;padding:9px;border-radius:6px;width:100%}dialog footer{padding:16px 22px;border-top:1px solid #333a53;display:flex;justify-content:flex-end;gap:10px}.agree{display:flex;gap:10px;align-items:flex-start;margin-top:18px}.agree input{flex-shrink:0}.result{background:#242d46;border:1px solid #505c80;border-radius:8px;padding:16px;margin-bottom:20px}.result h3{margin:0 0 5px}.result p{margin:4px 0}.result button{margin-top:12px}
+    @media(max-width:850px){aside{display:none}main{padding:22px 16px}.cards{gap:8px}.card{padding:12px}.card b{font-size:22px}}@media(max-width:520px){.review{padding:12px 16px;font-size:12px}.review strong{display:block}.cards{grid-template-columns:1fr 1fr}.toolbar .count{flex-basis:100%}.toolbar{gap:8px}.toolbar button{font-size:12px;padding:9px 10px;min-height:44px}.menu{width:245px}.panel{padding:12px}.heading{align-items:start}.heading>button{font-size:12px}.settings{grid-template-columns:1fr}.body,dialog header{padding:16px}.host-row{gap:8px}.host-row .reason{max-width:48%}.steps{gap:9px}dialog footer{padding:12px}h2{font-size:19px}}
+  </style>
+</head>
+<body>
+  <div class="review"><strong>NB / DESIGN REVIEW 01</strong>Interactive mockup · synthetic hosts · no API calls or patch commands. <a href="../../bulk-host-patching.md">Read the plan</a></div>
+  <div class="layout">
+    <aside><h2>PatchMon</h2><p>Dashboard</p><p class="active">Hosts</p><p>Packages</p><p>Patching</p><p>Settings</p></aside>
+    <main>
+      <div class="heading"><div><h1>Hosts</h1><span class="muted">Manage and monitor your infrastructure</span></div><button type="button">+ Add Host</button></div>
+      <div class="cards"><div class="card">Total hosts<b>5</b></div><div class="card">Connected<b>4</b></div><div class="card">Updates available<b>73</b></div><div class="card">Security updates<b class="security">12</b></div></div>
+      <div id="result" class="result" role="status" hidden></div>
+      <section class="panel" aria-label="Host list">
+        <div class="toolbar">
+          <span class="count" id="count" aria-live="polite">4 hosts selected</span>
+          <div class="drop"><button id="patch" class="primary" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="menu">Patch Selected <span aria-hidden="true">⌄</span></button>
+            <div class="menu" id="menu" role="menu" hidden><button type="button" role="menuitem" data-mode="all">All updates<small>All available updates on selected hosts</small></button><button type="button" role="menuitem" data-mode="security">Security updates only<small>Security updates and required dependencies</small></button></div>
+          </div>
+          <button type="button">↓ Fetch Reports</button><button type="button">Assign to Group</button><button type="button" class="danger">Delete</button><button type="button" id="clear">Clear</button>
+        </div>
+        <div class="search">⌕ Search hosts, IP addresses, or OS…</div>
+        <div class="table-wrap"><table><thead><tr><th><input type="checkbox" id="select-all" aria-label="Select all five demo hosts"></th><th>Host</th><th>OS</th><th>Connection</th><th>Updates</th><th>Security</th></tr></thead><tbody id="rows"></tbody></table></div>
+        <p class="small muted">Showing 5 of 5 demo hosts · selection controls below affect this mockup only.</p>
+      </section>
+      <div class="note"><strong>One selection. Two update scopes.</strong><p>Choose a scope, then review it in the existing patch wizard. Timing, approval, and reboot policy stay in place. No one-click execution.</p><p class="small">Try Security updates only: the offline host and the Arch host are explained, not silently included or upgraded in full.</p></div>
+      <div class="footer">Proposed placement uses the existing selection toolbar. Buttons remain normal-sized. Result states are simulated; no package manager has run.</div>
+    </main>
+  </div>
+  <dialog id="review" aria-labelledby="review-title">
+    <header><div><h2 id="review-title">Review selected hosts</h2><p id="scope"></p></div><button type="button" id="close" aria-label="Close review">✕</button></header>
+    <div class="body">
+      <div class="steps" aria-label="Existing wizard sequence"><span>Hosts</span><span>Packages</span><span>Validate</span><span>Timing</span><span>Approval</span><b>Submit</b></div>
+      <p class="small">Proposed final review in the existing wizard. Earlier timing and approval screens are condensed below for this mockup only.</p>
+      <div class="summary" id="summary"></div><div id="review-hosts"></div>
+      <div class="settings"><label>Timing<select id="timing"><option>Follow each host’s policy</option><option>Run immediately (explicit override)</option></select></label><label>Approval<select id="approval"><option>Run with my permission</option><option>Submit for approval</option></select></label></div>
+      <div class="note"><strong id="warning"></strong><p class="small">Services may restart. Existing reboot policy still applies; this action does not override it. Availability and permissions are checked again before submission.</p></div>
+      <label class="agree"><input type="checkbox" id="agree"><span id="agree-text"></span></label>
+    </div>
+    <footer><button type="button" id="cancel">Cancel</button><button type="button" class="primary" id="submit" disabled>Submit patch runs</button></footer>
+  </dialog>
+  <script>
+    const hosts = [
+      {id:'web',name:'web-01',ip:'192.0.2.11',os:'Ubuntu 24.04',online:true,updates:24,security:5},
+      {id:'db',name:'db-01',ip:'192.0.2.12',os:'Rocky Linux 9',online:true,updates:18,security:4},
+      {id:'edge',name:'edge-01',ip:'192.0.2.13',os:'Debian 12',online:false,updates:9,security:3},
+      {id:'build',name:'build-01',ip:'192.0.2.14',os:'Arch Linux',online:true,updates:22,security:null},
+      {id:'cache',name:'cache-01',ip:'192.0.2.15',os:'Ubuntu 24.04',online:true,updates:0,security:0}
+    ];
+    const selected = new Set(['web','db','edge','build']);
+    const byId = id => document.getElementById(id);
+    const menu = byId('menu'), patch = byId('patch'), dialog = byId('review');
+    let snapshot = [], mode = 'all', ready = [];
+    function closeMenu(){menu.hidden=true;patch.setAttribute('aria-expanded','false');}
+    function render(){
+      byId('rows').innerHTML=hosts.map(h=>`<tr><td><input type="checkbox" data-host="${h.id}" aria-label="Select ${h.name}" ${selected.has(h.id)?'checked':''}></td><td><strong>${h.name}</strong><small>${h.ip}</small></td><td>${h.os}</td><td><span class="pill ${h.online?'':'off'}">${h.online?'Connected':'Offline'}</span></td><td>${h.updates}</td><td class="security">${h.security===null?'Unknown':h.security}</td></tr>`).join('');
+      byId('count').textContent=`${selected.size} ${selected.size===1?'host':'hosts'} selected`;
+      patch.disabled=!selected.size;
+      byId('select-all').checked=selected.size===hosts.length;
+      byId('select-all').indeterminate=selected.size>0&&selected.size<hosts.length;
+      closeMenu();
+    }
+    byId('rows').addEventListener('change',e=>{const id=e.target.dataset.host;if(!id)return;e.target.checked?selected.add(id):selected.delete(id);render();});
+    byId('select-all').addEventListener('change',e=>{selected.clear();if(e.target.checked)hosts.forEach(h=>selected.add(h.id));render();});
+    byId('clear').addEventListener('click',()=>{selected.clear();render();});
+    patch.addEventListener('click',()=>{menu.hidden=!menu.hidden;patch.setAttribute('aria-expanded',String(!menu.hidden));if(!menu.hidden)menu.querySelector('button').focus();});
+    document.addEventListener('click',e=>{if(!e.target.closest('.drop'))closeMenu();});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!menu.hidden){closeMenu();patch.focus();}if(!menu.hidden&&['ArrowDown','ArrowUp'].includes(e.key)){e.preventDefault();const items=[...menu.querySelectorAll('button')];const i=items.indexOf(document.activeElement);items[(i+(e.key==='ArrowDown'?1:-1)+items.length)%items.length].focus();}});
+    function reason(h){if(!h.online)return 'Skipped · agent offline';if(mode==='security'&&h.id==='build')return 'Blocked · partial upgrades unsupported';if(mode==='security'&&h.security===null)return 'Blocked · security classification unknown';if(!(mode==='security'?h.security:h.updates))return 'Skipped · no matching updates';return null;}
+    menu.addEventListener('click',e=>{
+      const choice=e.target.closest('[data-mode]');if(!choice)return;
+      mode=choice.dataset.mode;snapshot=hosts.filter(h=>selected.has(h.id));ready=snapshot.filter(h=>!reason(h));closeMenu();
+      byId('review-title').textContent=mode==='all'?'Patch all updates?':'Patch security updates only?';
+      byId('scope').textContent=`${snapshot.length} explicitly selected hosts · scope is fixed`;
+      byId('summary').innerHTML=`<span>${ready.length} ready</span><span>${snapshot.length-ready.length} skipped or blocked</span>`;
+      byId('review-hosts').innerHTML=snapshot.map(h=>`<div class="host-row"><div><strong>${h.name}</strong><div class="muted small">${h.os}</div></div><div class="reason ${reason(h)?'':'ready'}">${reason(h)||`Ready · ${mode==='security'?h.security+' security':h.updates} updates`}</div></div>`).join('');
+      byId('warning').textContent=mode==='security'?'Security updates and required dependencies only. Never fall back to all updates.':'All updates uses the existing full-upgrade behaviour for each eligible host.';
+      byId('agree-text').textContent=ready.length?`I confirm ${mode==='security'?'security updates':'all updates'} on these ${ready.length} ready hosts. ${snapshot.length-ready.length} other selected hosts will not be submitted.`:'No selected hosts are ready. Return to the list to change the selection.';
+      byId('agree').checked=false;byId('agree').disabled=!ready.length;byId('submit').disabled=true;byId('timing').selectedIndex=0;byId('approval').selectedIndex=0;dialog.showModal();
+    });
+    byId('agree').addEventListener('change',e=>{byId('submit').disabled=!e.target.checked||!ready.length;});
+    function closeReview(){dialog.close();patch.focus();}
+    byId('close').addEventListener('click',closeReview);byId('cancel').addEventListener('click',closeReview);dialog.addEventListener('close',()=>patch.focus());
+    byId('submit').addEventListener('click',()=>{
+      const approval=byId('approval').selectedIndex===1;
+      byId('result').innerHTML=`<h3>Simulation only · no updates executed</h3><p>${ready.length} host requests ${approval?'submitted for approval':'created under the chosen timing policy'}; ${snapshot.length-ready.length} skipped or blocked.</p><p class="small">${ready.map(h=>h.name).join(', ')} · ${mode==='security'?'Security updates only':'All updates'}</p><p class="small">Created is not completed. The real UI will link each run to Runs &amp; History and show failures per host.</p><button type="button" id="dismiss">Dismiss</button>`;
+      byId('result').hidden=false;byId('dismiss').addEventListener('click',()=>{byId('result').hidden=true;});closeReview();
+    });
+    render();
+  </script>
+</body>
+</html>
