@@ -27,8 +27,9 @@ the existing platform-specific rules for failed/cancelled runs are unchanged.
 - No disk queue: reports do not survive agent restart or an outage longer than
   the final-delivery window. Scheduled inventory check-ins remain the fallback
   when the immediate inventory refresh also fails.
-- Existing server terminal-state guards remain intact. This does not repair
-  historical runs or replace a `timed_out`/cancelled result with `completed`.
+- Existing server terminal-state guards remain intact: late completion can
+  recover `timed_out`/`agent_disconnected` runs, but cannot overwrite a cancelled
+  run. This change does not replay reports for historical runs.
 - Windows per-update item delivery is unchanged; this retries the final report,
   not missing item reports.
 - Rebuild and update installed agents to deploy. Increment `NB_BUILD` before
