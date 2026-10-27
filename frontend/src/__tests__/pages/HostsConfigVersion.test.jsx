@@ -11,6 +11,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Hosts from "../../pages/Hosts";
 import { dashboardAPI, userPreferencesAPI } from "../../utils/api";
 
+vi.mock("../../contexts/AuthContext", () => ({
+	useAuth: () => ({ canManagePatching: () => false, hasModule: () => true }),
+}));
+
 const { HOSTS } = vi.hoisted(() => {
 	const host = (overrides) => ({
 		api_id: `api-${overrides.id}`,

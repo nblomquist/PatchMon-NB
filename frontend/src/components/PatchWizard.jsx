@@ -183,6 +183,9 @@ export default function PatchWizard({
 	patchTypeByRun,
 	windowsScopeByRun,
 	packageMeta,
+	packagesByHost,
+	selectionMode,
+	selectionSkipped = [],
 }) {
 	const queryClient = useQueryClient();
 	const { warning: toastWarning } = useToast();
@@ -201,6 +204,10 @@ export default function PatchWizard({
 		(presetHosts || []).length > 0 &&
 		(presetHosts || []).every((h) => isWindowsOs(hostOsType(h)));
 	const windowsPatchAll = isPatchAll && !isApprove && presetAllWindows;
+	const hasWindowsPatchAll =
+		isPatchAll &&
+		!isApprove &&
+		(presetHosts || []).some((h) => isWindowsOs(hostOsType(h)));
 
 	// --- Stable session identity ------------------------------------------
 	// Callers very commonly pass inline array/object literals for presetHosts,
@@ -218,7 +225,9 @@ export default function PatchWizard({
 		lockPackages ? "LP" : ""
 	}|H:${(presetHosts || []).map((h) => h?.id || "").join(",")}|R:${(
 		validationRunIds || []
-	).join(",")}|P:${(packageNames || []).join("\n")}`;
+	).join(
+		",",
+	)}|P:${(packageNames || []).join("\n")}|S:${selectionMode || ""}|HP:${JSON.stringify(packagesByHost || {})}`;
 
 	// Build the list of enabled steps from props. We use string IDs so the
 	// render code can branch on them without relying on index math, which
@@ -282,6 +291,7 @@ export default function PatchWizard({
 	// matches the existing behaviour of Queue & patch.
 	const [approvalDecision, setApprovalDecision] = useState("approve_now");
 	const [windowsScope, setWindowsScope] = useState(DEFAULT_WINDOWS_SCOPE);
+	const [selectionConfirmed, setSelectionConfirmed] = useState(false);
 
 	// --- Host discovery (only used when !lockHosts) ---
 	// Fetch hosts for each package in parallel when we need to discover them.
@@ -437,6 +447,7 @@ export default function PatchWizard({
 		setPolicyOverrides({});
 		setApprovalDecision("approve_now");
 		setWindowsScope(DEFAULT_WINDOWS_SCOPE);
+		setSelectionConfirmed(false);
 		setSubmitResultByTarget({});
 		setSubmitMode(null);
 		hasReported.current = false;
@@ -755,11 +766,12 @@ export default function PatchWizard({
 		(target) => {
 			const runPkgs = target?.runId ? packagesByRun?.[target.runId] : undefined;
 			if (runPkgs !== undefined) return runPkgs;
+			if (packagesByHost) return packagesByHost[target?.hostId] || [];
 			const discovered = discoveredPackagesByHost?.[target?.hostId];
 			if (discovered) return discovered;
 			return selectedPkgs;
 		},
-		[packagesByRun, discoveredPackagesByHost, selectedPkgs],
+		[packagesByRun, packagesByHost, discoveredPackagesByHost, selectedPkgs],
 	);
 
 	const selectionKey = useCallback(
@@ -834,7 +846,11 @@ export default function PatchWizard({
 		...(selectedTargets.length === 0 ? [dryRunPackageLimit("")] : []),
 	);
 
-	const scopeValid = !windowsPatchAll || isWindowsScopeValid(windowsScope);
+	const scopeValid =
+		(!hasWindowsPatchAll || isWindowsScopeValid(windowsScope)) &&
+		(selectionMode !== "security" ||
+			selectedTargets.every((t) => packagesForTarget(t).length > 0));
+	const selectionBody = selectionMode ? { selection_mode: selectionMode } : {};
 
 	const windowsScopeBody = (target) =>
 		isPatchAll && isWindowsTarget(target)
@@ -893,6 +909,7 @@ export default function PatchWizard({
 								null,
 								{
 									dry_run: true,
+									...selectionBody,
 									...windowsScopeBody(target),
 								},
 							)
@@ -901,7 +918,7 @@ export default function PatchWizard({
 								"patch_package",
 								null,
 								packagesForTarget(target),
-								{ dry_run: true },
+								{ dry_run: true, ...selectionBody },
 							);
 					runId = res?.patch_run_id;
 					if (signal.aborted) {
@@ -977,6 +994,7 @@ export default function PatchWizard({
 	};
 
 	const handleConfirm = async () => {
+		if (selectionMode && !selectionConfirmed) return;
 		if (selectedTargets.length === 0) {
 			setError("Select at least one host");
 			return;
@@ -1025,7 +1043,11 @@ export default function PatchWizard({
 					patchType,
 					null,
 					isPatchAll ? null : packagesForTarget(target),
-					{ pending_approval: true, ...windowsScopeBody(target) },
+					{
+						pending_approval: true,
+						...selectionBody,
+						...windowsScopeBody(target),
+					},
 				);
 				if (!response?.patch_run_id) {
 					throw new Error("The server did not return a run for this host");
@@ -1056,7 +1078,7 @@ export default function PatchWizard({
 					"patch_all",
 					null,
 					null,
-					{ ...overrideBody, ...windowsScopeBody(target) },
+					{ ...overrideBody, ...selectionBody, ...windowsScopeBody(target) },
 				);
 			} else {
 				// Trigger mode, package patch. If a validation run exists from
@@ -1075,7 +1097,7 @@ export default function PatchWizard({
 						"patch_package",
 						null,
 						packagesForTarget(target),
-						overrideBody,
+						{ ...overrideBody, ...selectionBody },
 					);
 				}
 			}
@@ -1239,15 +1261,17 @@ export default function PatchWizard({
 			: singleLockedHostLabel
 				? `Approve patch run on ${singleLockedHostLabel}`
 				: "Approve patch run"
-		: isPatchAll
-			? singleLockedHostLabel
-				? `Patch all packages on ${singleLockedHostLabel}`
-				: "Patch all packages"
-			: singleLockedHostLabel && selectedPkgs.length > 0
-				? `Patch ${selectedPkgs.length} package${
-						selectedPkgs.length === 1 ? "" : "s"
-					} on ${singleLockedHostLabel}`
-				: "Patch packages on hosts";
+		: selectionMode === "security"
+			? "Patch security updates only"
+			: isPatchAll
+				? singleLockedHostLabel
+					? `Patch all packages on ${singleLockedHostLabel}`
+					: "Patch all packages"
+				: singleLockedHostLabel && selectedPkgs.length > 0
+					? `Patch ${selectedPkgs.length} package${
+							selectedPkgs.length === 1 ? "" : "s"
+						} on ${singleLockedHostLabel}`
+					: "Patch packages on hosts";
 
 	const submitVerb = submitVerbFor(submitMode);
 
@@ -1449,6 +1473,58 @@ export default function PatchWizard({
 
 				{/* Body */}
 				<div className="px-6 py-4 overflow-y-auto flex-1 min-h-0">
+					{selectionMode && (
+						<div className="mb-4 rounded-lg border border-secondary-200 dark:border-secondary-600 p-3 text-sm text-secondary-700 dark:text-secondary-200">
+							<strong>
+								{selectionMode === "security"
+									? "Security updates and required dependencies"
+									: "All updates on selected hosts"}
+							</strong>
+							<p>
+								Services may restart. Existing reboot policy still applies.
+								Availability and update scope are checked again before
+								submission.
+							</p>
+							{selectionSkipped.length > 0 && (
+								<details className="mt-2">
+									<summary>
+										{selectionSkipped.length} selected hosts skipped or blocked
+									</summary>
+									<ul>
+										{selectionSkipped.map((host) => (
+											<li className="break-words mt-1" key={host.id}>
+												{host.friendly_name || host.hostname || host.id}:{" "}
+												{host.reason}
+											</li>
+										))}
+									</ul>
+								</details>
+							)}
+							{currentStepId === "submit" && (
+								<label className="flex items-start gap-2 mt-3">
+									<input
+										type="checkbox"
+										checked={selectionConfirmed}
+										disabled={isPatching || submittedRuns.length > 0}
+										onChange={(event) =>
+											setSelectionConfirmed(event.target.checked)
+										}
+									/>
+									<span>
+										I confirm{" "}
+										{selectionMode === "security"
+											? "security updates"
+											: "all updates"}{" "}
+										on these {selectedTargets.length} ready hosts.
+									</span>
+								</label>
+							)}
+						</div>
+					)}
+					{currentStepId === "timing" &&
+						hasWindowsPatchAll &&
+						!windowsPatchAll &&
+						windowsScopePicker}
 					{/* Mode banner. A tiny, persistent hint so the user never loses
 					    track of what "kind" of wizard they're in — especially in
 					    approve mode, which reuses almost all the same chrome as a
@@ -2768,6 +2844,7 @@ export default function PatchWizard({
 								onClick={handleConfirm}
 								disabled={
 									isPatching ||
+									(selectionMode && !selectionConfirmed) ||
 									selectedTargetIds.size === 0 ||
 									!scopeValid ||
 									(submittedRuns.length === 0 &&

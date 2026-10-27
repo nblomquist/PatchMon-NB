@@ -62,8 +62,15 @@ type PatchingHandler struct {
 	// Optional collaborators for live patch-run streaming.
 	// Populated via SetStreamDependencies after construction so existing
 	// call-sites don't need to thread these values immediately.
-	hub      *patchstream.Hub
-	registry *agentregistry.Registry
+	hub              *patchstream.Hub
+	registry         *agentregistry.Registry
+	selectionReboots *HostRebootHandler
+}
+
+// SetSelectionReboots shares the existing reboot lifecycle checks with the
+// additive selection flow; existing patch entrypoints retain their behaviour.
+func (h *PatchingHandler) SetSelectionReboots(reboots *HostRebootHandler) {
+	h.selectionReboots = reboots
 }
 
 // NewPatchingHandler creates a new patching handler.
@@ -722,6 +729,23 @@ func (h *PatchingHandler) ApproveRun(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	selectionMode := store.PatchSelectionMode(valRun.PolicySnapshot)
+	if selectionMode != "" {
+		if reason := h.selectionReadiness(r.Context(), host); reason != "" {
+			Error(w, http.StatusConflict, reason)
+			return
+		}
+	}
+	if selectionMode == "security" {
+		if valRun.PatchType != "patch_package" {
+			Error(w, http.StatusConflict, "Security-only runs must use explicit packages")
+			return
+		}
+		if err := h.patchRuns.CheckSecuritySelection(r.Context(), host.ID, pkgNames); err != nil {
+			Error(w, http.StatusConflict, err.Error())
+			return
+		}
+	}
 
 	var approveOpts *store.CreateRunOpts
 	if store.IsWindowsOSType(host.OSType) {
@@ -801,6 +825,7 @@ func (h *PatchingHandler) ApproveRun(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	policySnap = store.WithPatchSelectionMode(policySnap, selectionMode)
 	// Create the new patch run ID and job ID up-front so the task can reference it.
 	newRunID := uuid.New().String()
 	jobID := "patch-run-" + newRunID
@@ -1062,11 +1087,12 @@ func (h *PatchingHandler) DeleteRun(w http.ResponseWriter, r *http.Request) {
 
 func (h *PatchingHandler) Trigger(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		HostID       string   `json:"host_id"`
-		PatchType    string   `json:"patch_type"`
-		PackageName  string   `json:"package_name"`
-		PackageNames []string `json:"package_names"`
-		DryRun       bool     `json:"dry_run"`
+		HostID        string   `json:"host_id"`
+		PatchType     string   `json:"patch_type"`
+		PackageName   string   `json:"package_name"`
+		PackageNames  []string `json:"package_names"`
+		DryRun        bool     `json:"dry_run"`
+		SelectionMode string   `json:"selection_mode"`
 		// PendingApproval creates the run in pending_validation status WITHOUT
 		// enqueuing any work to the host. It's the "submit for approval" path:
 		// a second approver later calls ApproveRun to actually execute. Works
@@ -1091,6 +1117,14 @@ func (h *PatchingHandler) Trigger(w http.ResponseWriter, r *http.Request) {
 		JSON(w, http.StatusBadRequest, map[string]string{"error": "dry_run and pending_approval are mutually exclusive"})
 		return
 	}
+	if body.SelectionMode != "" && body.SelectionMode != "all" && body.SelectionMode != "security" {
+		Error(w, http.StatusBadRequest, "Invalid selection mode")
+		return
+	}
+	if (body.SelectionMode == "all" && body.PatchType != "patch_all") || (body.SelectionMode == "security" && body.PatchType != "patch_package") {
+		Error(w, http.StatusBadRequest, "Update scope does not match patch type")
+		return
+	}
 
 	host, ok := loadHost(w, r, h.hosts, body.HostID)
 	if !ok {
@@ -1101,6 +1135,22 @@ func (h *PatchingHandler) Trigger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	windows := store.IsWindowsOSType(host.OSType)
+	if body.SelectionMode != "" {
+		if reason := h.selectionReadiness(r.Context(), host); reason != "" {
+			Error(w, http.StatusConflict, reason)
+			return
+		}
+	}
+	if body.SelectionMode == "security" {
+		if body.PackageName != "" {
+			Error(w, http.StatusBadRequest, "Security-only patching requires explicit package_names")
+			return
+		}
+		if err := h.patchRuns.CheckSecuritySelection(r.Context(), host.ID, body.PackageNames); err != nil {
+			Error(w, http.StatusConflict, err.Error())
+			return
+		}
+	}
 
 	if body.DryRun && body.PatchType != "patch_package" && !windows {
 		JSON(w, http.StatusBadRequest, map[string]string{"error": "dry_run is only supported for patch_package"})
@@ -1219,6 +1269,7 @@ func (h *PatchingHandler) Trigger(w http.ResponseWriter, r *http.Request) {
 			"patch_delay_type": "immediate",
 		})
 	}
+	policySnapshot = store.WithPatchSelectionMode(policySnapshot, body.SelectionMode)
 	// Pending-approval runs land in their own "pending_approval" status: they
 	// never executed anything on the host (so they're not pending_validation,
 	// which implies an in-flight dry-run), they're just waiting for an

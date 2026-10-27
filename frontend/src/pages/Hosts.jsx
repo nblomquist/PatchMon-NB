@@ -44,11 +44,13 @@ import {
 	AgentVersionIndicators,
 	ConfigVersionValue,
 } from "../components/host/HostIdentity";
+import HostPatchSelected from "../components/host/HostPatchSelected";
 import InlineEdit from "../components/InlineEdit";
 import InlineMultiGroupEdit from "../components/InlineMultiGroupEdit";
 import InlineToggle from "../components/InlineToggle";
 import ModalPortal from "../components/ui/ModalPortal";
 import Tooltip from "../components/ui/Tooltip";
+import { useAuth } from "../contexts/AuthContext";
 import {
 	HOSTS_SORT_FIELDS,
 	useHostsUrlFilters,
@@ -124,6 +126,7 @@ const fetchWsStatusBatches = async (apiIds) => {
 };
 
 const Hosts = () => {
+	const { canManagePatching, hasModule } = useAuth();
 	const hostGroupFilterId = useId();
 	const statusFilterId = useId();
 	const connectionFilterId = useId();
@@ -1905,6 +1908,9 @@ const Hosts = () => {
 									{selectedHosts.length} host
 									{selectedHosts.length !== 1 ? "s" : ""} selected
 								</span>
+								{canManagePatching() && hasModule("patching") && (
+									<HostPatchSelected selectedHostIds={selectedHosts} />
+								)}
 								<button
 									type="button"
 									onClick={handleBulkFetchReport}

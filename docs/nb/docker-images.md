@@ -17,7 +17,7 @@ mise exec -- ./docker/build.sh --tag smoke
 ```
 
 The script stamps the nearest Git tag plus `~nbN` into the server and agents.
-`N` comes from the root `NB_BUILD` file (currently `1`). If this fork
+`N` comes from the root `NB_BUILD` file (currently `2`). If this fork
 has no tags, fetch the parent's tags locally first:
 
 ```sh

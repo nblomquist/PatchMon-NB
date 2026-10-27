@@ -11,6 +11,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Hosts from "../../pages/Hosts";
 import { dashboardAPI } from "../../utils/api";
 
+const patchAccess = vi.hoisted(() => ({ manage: false, enabled: true }));
+
 vi.mock("../../utils/api", async (importOriginal) => {
 	const actual = await importOriginal();
 	const ok = (data) => vi.fn(() => Promise.resolve({ data }));
@@ -91,6 +93,8 @@ const openFilters = async () => {
 };
 
 beforeEach(() => {
+	patchAccess.manage = false;
+	patchAccess.enabled = true;
 	dashboardAPI.getHosts.mockClear();
 	localStorage.clear();
 	vi.stubGlobal(
@@ -334,5 +338,31 @@ describe("existing deep links into /hosts still apply", () => {
 		fireEvent.click(screen.getByText("Total Hosts"));
 		expect(location.search).toBe("");
 		expect(screen.getByPlaceholderText(/search hosts/i)).toHaveValue("");
+	});
+});
+vi.mock("../../contexts/AuthContext", () => ({
+	useAuth: () => ({
+		canManagePatching: () => patchAccess.manage,
+		hasModule: () => patchAccess.enabled,
+	}),
+}));
+
+describe("Hosts patch selection permission", () => {
+	it("shows Patch Selected for a permitted selection", async () => {
+		patchAccess.manage = true;
+		renderAt("/hosts?selected=h1&filter=selected");
+		expect(
+			await screen.findByRole("button", { name: "Patch Selected" }),
+		).toBeEnabled();
+	});
+	it.each([
+		"permission",
+		"module",
+	])("hides Patch Selected without the %s", async (missing) => {
+		patchAccess.manage = missing !== "permission";
+		patchAccess.enabled = missing !== "module";
+		renderAt("/hosts?selected=h1&filter=selected");
+		await screen.findByText("1 host selected");
+		expect(screen.queryByRole("button", { name: "Patch Selected" })).toBeNull();
 	});
 });

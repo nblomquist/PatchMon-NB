@@ -832,6 +832,17 @@ func (h *RunPatchHandler) ProcessTask(ctx context.Context, t *asynq.Task) error 
 		return nil
 	}
 
+	if store.PatchSelectionMode(run.PolicySnapshot) == "security" {
+		var names []string
+		if err := json.Unmarshal(run.PackageNames, &names); err != nil || run.PatchType != "patch_package" {
+			return h.patchRuns.FailRun(ctx, p.PatchRunID, "Invalid security-only package scope")
+		}
+		if err := h.patchRuns.CheckSecuritySelection(ctx, run.HostID, names); err != nil {
+			return h.patchRuns.FailRun(ctx, p.PatchRunID, err.Error())
+		}
+		// The persisted, confirmed set is authoritative, not the queue payload.
+		p.PatchType, p.PackageNames, p.PackageName = "patch_package", names, nil
+	}
 	var pending []db.PatchRunItem
 	windows := run.HostOsType != nil && store.IsWindowsOSType(*run.HostOsType)
 	if windows && p.PatchType == "patch_package" {

@@ -121,6 +121,131 @@ const triggeredHosts = () => patchingAPI.trigger.mock.calls.map((c) => c[0]);
 
 const approvedRunIds = () => patchingAPI.approveRun.mock.calls.map((c) => c[0]);
 
+describe("Patch Selected fixed security scope", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		patchingAPI.getPreviewRun.mockResolvedValue({});
+		patchingAPI.trigger.mockImplementation(async (id) => ({
+			patch_run_id: `run-${id}`,
+		}));
+	});
+	it("keeps the security constraint on optional validation requests", async () => {
+		const { pollDryRunUntilDone } = await import("../../utils/patchingApi");
+		pollDryRunUntilDone.mockResolvedValue({
+			status: "validated",
+			packages_affected: [],
+			shell_output: "",
+			error: null,
+		});
+		renderWizard(HOSTS.slice(0, 2), {
+			initialStep: 0,
+			patchType: "patch_package",
+			packageNames: [],
+			lockPackages: true,
+			packagesByHost: { h1: ["openssl"], h2: ["sudo"] },
+			selectionMode: "security",
+		});
+		await clickAndSettle(
+			screen.getByRole("button", { name: "Run validation" }),
+		);
+		expect(
+			patchingAPI.trigger.mock.calls.map((args) => [args[0], args[3], args[4]]),
+		).toEqual([
+			["h1", ["openssl"], { dry_run: true, selection_mode: "security" }],
+			["h2", ["sudo"], { dry_run: true, selection_mode: "security" }],
+		]);
+	});
+	it("retries only failed hosts while retaining their fixed security package list", async () => {
+		let attempts = 0;
+		patchingAPI.trigger.mockImplementation(async (id) => {
+			if (id === "h2" && attempts++ === 0)
+				throw new Error("agent disconnected");
+			return { patch_run_id: `run-${id}` };
+		});
+		renderWizard(HOSTS.slice(0, 2), {
+			patchType: "patch_package",
+			packageNames: [],
+			lockPackages: true,
+			packagesByHost: { h1: ["openssl"], h2: ["sudo"] },
+			selectionMode: "security",
+		});
+		await clickAndSettle(
+			screen.getByRole("checkbox", { name: /I confirm security updates/ }),
+		);
+		await clickAndSettle(confirmButton());
+		await clickAndSettle(
+			await screen.findByRole("button", { name: "Retry 1 failed host" }),
+		);
+		expect(triggeredHosts()).toEqual(["h1", "h2", "h2"]);
+		expect(patchingAPI.trigger.mock.lastCall[3]).toEqual(["sudo"]);
+	});
+	it("requires confirmation and sends each host only its reported security packages", async () => {
+		renderWizard(HOSTS.slice(0, 2), {
+			patchType: "patch_package",
+			packageNames: [],
+			lockPackages: true,
+			packagesByHost: { h1: ["openssl"], h2: ["sudo"] },
+			selectionMode: "security",
+		});
+		expect(confirmButton()).toBeDisabled();
+		await clickAndSettle(
+			screen.getByRole("checkbox", { name: /I confirm security updates/ }),
+		);
+		await clickAndSettle(confirmButton());
+		expect(
+			patchingAPI.trigger.mock.calls.map((args) => [
+				args[0],
+				args[1],
+				args[3],
+				args[4],
+			]),
+		).toEqual([
+			["h1", "patch_package", ["openssl"], { selection_mode: "security" }],
+			["h2", "patch_package", ["sudo"], { selection_mode: "security" }],
+		]);
+	});
+	it("does not fall back to a union or full upgrade when a host package list is missing", async () => {
+		renderWizard(HOSTS.slice(0, 2), {
+			patchType: "patch_package",
+			packageNames: ["union"],
+			lockPackages: true,
+			packagesByHost: { h1: ["openssl"] },
+			selectionMode: "security",
+		});
+		await clickAndSettle(
+			screen.getByRole("checkbox", { name: /I confirm security updates/ }),
+		);
+		expect(confirmButton()).toBeDisabled();
+		expect(patchingAPI.trigger).not.toHaveBeenCalled();
+	});
+	it("allows the Windows update/application scope to be chosen for a mixed fleet", async () => {
+		renderWizard(
+			[
+				{ ...HOSTS[0], os_type: "Ubuntu" },
+				{ ...HOSTS[1], os_type: "Windows Server" },
+			],
+			{ initialStep: 0, selectionMode: "all" },
+		);
+		await screen.findByRole("button", { name: "Applications (winget)" });
+		await clickAndSettle(
+			screen.getByRole("button", { name: "Applications (winget)" }),
+		);
+		await clickAndSettle(screen.getByRole("button", { name: "Next" }));
+		await clickAndSettle(screen.getByRole("button", { name: "Next" }));
+		await clickAndSettle(
+			screen.getByRole("checkbox", { name: /I confirm all updates/ }),
+		);
+		await clickAndSettle(confirmButton());
+		expect(patchingAPI.trigger.mock.calls[0][4]).toEqual({
+			selection_mode: "all",
+		});
+		expect(patchingAPI.trigger.mock.calls[1][4]).toEqual({
+			selection_mode: "all",
+			windows_scope: { updates: true, apps: false },
+		});
+	});
+});
+
 describe("PatchWizard partial-failure handling", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();

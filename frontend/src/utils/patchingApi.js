@@ -124,6 +124,10 @@ export async function pollDryRunUntilDone(runId, { signal, onStatus } = {}) {
 }
 
 export const patchingAPI = {
+	previewSelection: (hostIds, mode) =>
+		api
+			.post("/patching/selection-preview", { host_ids: hostIds, mode })
+			.then((res) => res.data),
 	getDashboard: () => api.get("/patching/dashboard").then((res) => res.data),
 	getRuns: (params = {}) =>
 		api.get("/patching/runs", { params }).then((res) => res.data),
@@ -145,6 +149,7 @@ export const patchingAPI = {
 					? { package_names }
 					: {}),
 				...(opts.dry_run ? { dry_run: true } : {}),
+				...(opts.selection_mode ? { selection_mode: opts.selection_mode } : {}),
 				...(opts.pending_approval ? { pending_approval: true } : {}),
 				...(opts.schedule_override
 					? { schedule_override: opts.schedule_override }

@@ -282,6 +282,7 @@ func NewRouter(ctx context.Context, cfg *config.Config, db *database.DB, rdb *re
 	// for the stop-run endpoint. Kept as optional dependencies so unrelated
 	// call-sites don't need to thread them.
 	patchingHandler.SetStreamDependencies(patchstream.NewHub(), registry)
+	patchingHandler.SetSelectionReboots(rebootHandler)
 	windowsUpdatesHandler := handler.NewWindowsUpdatesHandler(hostsStore, dbProvider)
 
 	aiSvc := ai.NewService(enc)
@@ -650,6 +651,7 @@ func NewRouter(ctx context.Context, cfg *config.Config, db *database.DB, rdb *re
 			r.With(middleware.RequirePermission("can_manage_patching", permissionsStore), hostctx.RequireModule("patching")).Post("/patching/runs/{id}/stop", patchingHandler.StopRun)
 			r.With(middleware.RequirePermission("can_manage_patching", permissionsStore), hostctx.RequireModule("patching")).Delete("/patching/runs/{id}", patchingHandler.DeleteRun)
 			r.With(middleware.RequirePermission("can_manage_patching", permissionsStore), hostctx.RequireModule("patching")).Post("/patching/trigger", patchingHandler.Trigger)
+			r.With(middleware.RequirePermission("can_manage_patching", permissionsStore), hostctx.RequireModule("patching")).Post("/patching/selection-preview", patchingHandler.SelectionPreview)
 			// Policies + approval workflow: patching_policies module.
 			r.With(middleware.RequirePermission("can_view_hosts", permissionsStore), hostctx.RequireModule("patching_policies")).Get("/patching/policies", patchingHandler.ListPolicies)
 			r.With(middleware.RequirePermission("can_manage_patching", permissionsStore), hostctx.RequireModule("patching_policies")).Post("/patching/policies", patchingHandler.CreatePolicy)
