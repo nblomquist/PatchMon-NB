@@ -2921,49 +2921,36 @@ func runPatch(patchRunID, patchType string, packageNames []string, dryRun bool) 
 	finalCtx, finalCancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer finalCancel()
 
+	stage, errorMessage := "completed", ""
 	switch {
 	case wasStopped:
-		if err := httpClient.SendPatchOutput(finalCtx, patchRunID, "cancelled", fullOutput.String(), "stopped by user"); err != nil {
-			logger.WithError(err).Warn("Failed to send patch cancelled output to server")
-		}
+		stage, errorMessage = "cancelled", "stopped by user"
 	case stepErr != nil:
-		if err := httpClient.SendPatchOutput(finalCtx, patchRunID, "failed", fullOutput.String(), stepErr.Error()); err != nil {
-			logger.WithError(err).Warn("Failed to send patch failed output to server")
-		}
-		return stepErr
-	default:
-		stage := "completed"
-		if dryRun {
-			stage = "dry_run_completed"
-		}
-		if err := httpClient.SendPatchOutput(finalCtx, patchRunID, stage, fullOutput.String(), ""); err != nil {
-			logger.WithError(err).Warn("Failed to send patch output to server")
-			return err
-		}
+		stage, errorMessage = "failed", stepErr.Error()
+	case dryRun:
+		stage = "dry_run_completed"
 	}
 
 	// Post-patch inventory report: runs after success AND after user-triggered
 	// stop (a cancelled run may leave packages in a partially-changed state).
+	var refresh func()
 	if !dryRun && (wasStopped || stepErr == nil) {
-		logger.Info("Sending post-patch report to refresh package lists...")
-		reportDone := make(chan error, 1)
-		go func() { reportDone <- sendReport(false) }()
-		select {
-		case err := <-reportDone:
-			if err != nil {
-				logger.WithError(err).Warn("Post-patch report failed")
-			} else {
-				logger.Info("Post-patch report sent successfully")
-			}
-		case <-time.After(2 * time.Minute):
-			logger.Warn("Post-patch report timed out after 2 minutes; will retry on next scheduled report")
-		}
+		refresh = refreshPostPatchInventory
+	}
+	finalErr := finishPatchReport(finalCtx, func(ctx context.Context) error {
+		return httpClient.SendPatchOutput(ctx, patchRunID, stage, fullOutput.String(), errorMessage)
+	}, refresh, 5*time.Second)
+	if finalErr != nil {
+		logger.WithError(finalErr).Warn("Failed to send final patch output before deadline")
 	}
 
 	if wasStopped {
 		return errPatchRunStopped
 	}
-	return nil
+	if stepErr != nil {
+		return stepErr
+	}
+	return finalErr
 }
 
 // The final stage gets its own deadline, started after the run: a run lasts far longer.
@@ -3037,25 +3024,15 @@ func runPatchWindows(patchRunID string, req packages.WindowsPatchRequest, parseE
 	}
 	finalCtx, finalCancel := context.WithTimeout(context.Background(), windowsFinalTimeout)
 	defer finalCancel()
-	finalErr := httpClient.SendPatchFinal(finalCtx, patchRunID, res.Stage, fullOutput.String(), res.ErrorMessage, reboot)
+	var refresh func()
+	if !req.DryRun {
+		refresh = refreshPostPatchInventory
+	}
+	finalErr := finishPatchReport(finalCtx, func(ctx context.Context) error {
+		return httpClient.SendPatchFinal(ctx, patchRunID, res.Stage, fullOutput.String(), res.ErrorMessage, reboot)
+	}, refresh, 5*time.Second)
 	if finalErr != nil {
 		logger.WithError(finalErr).Warn("Failed to send Windows patch output to server")
-	}
-
-	if !req.DryRun {
-		logger.Info("Sending post-patch report to refresh package lists...")
-		reportDone := make(chan error, 1)
-		go func() { reportDone <- sendReport(false) }()
-		select {
-		case err := <-reportDone:
-			if err != nil {
-				logger.WithError(err).Warn("Post-patch report failed")
-			} else {
-				logger.Info("Post-patch report sent successfully")
-			}
-		case <-time.After(2 * time.Minute):
-			logger.Warn("Post-patch report timed out after 2 minutes; will retry on next scheduled report")
-		}
 	}
 
 	switch {
