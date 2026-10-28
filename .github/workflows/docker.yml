@@ -110,7 +110,7 @@ jobs:
         working-directory: agent-source-code
         env:
           CGO_ENABLED: 0
-          VERSION: ${{ steps.ctx.outputs.version }}
+          VERSION: ${{ steps.ctx.outputs.agent-version }}
         run: |
           mkdir -p ../agents-prebuilt
           for target in "linux/amd64" "linux/arm64" "linux/386" "linux/arm" \

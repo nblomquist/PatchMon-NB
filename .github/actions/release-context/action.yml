@@ -29,6 +29,9 @@ inputs:
     default: 'false'
 
 outputs:
+  agent-version:
+    description: Complete independently pinned agent version from AGENT_VERSION.
+    value: ${{ steps.resolve.outputs.agent-version }}
   version:
     description: >
       MAJOR.MINOR.PATCH on a release tag, and the tag verbatim on a
@@ -138,6 +141,14 @@ runs:
           exit 1
         fi
 
+        # This trusted action may read a fork-controlled workspace. Validate the
+        # pin as data; do not execute a helper from that workspace with GH_TOKEN.
+        AGENT_VERSION="$(cat AGENT_VERSION)"
+        AGENT_PATTERN='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?(~nb[1-9][0-9]*)?$'
+        if [[ ! "$AGENT_VERSION" =~ $AGENT_PATTERN ]]; then
+          echo "::error::AGENT_VERSION must be a complete valid version"
+          exit 1
+        fi
         {
           NB_BUILD="$(cat NB_BUILD)"
           if ! printf '%s' "$NB_BUILD" | grep -qE '^[1-9][0-9]*$'; then
@@ -145,6 +156,7 @@ runs:
             exit 1
           fi
           echo "version=${VERSION}~nb${NB_BUILD}"
+          echo "agent-version=${AGENT_VERSION}"
           echo "is-release=$IS_RELEASE"
         } >> "$GITHUB_OUTPUT"
         echo "Version: $VERSION (release: $IS_RELEASE)"

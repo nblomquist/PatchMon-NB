@@ -16,23 +16,27 @@
 mise exec -- ./docker/build.sh --tag smoke
 ```
 
-The script stamps the nearest Git tag plus `~nbN` into the server and agents.
-`N` comes from the root `NB_BUILD` file (currently `2`). If this fork
-has no tags, fetch the parent's tags locally first:
+The script stamps the nearest Git tag plus `~nbN` into the server. `N` comes
+from root `NB_BUILD`. Agents use the complete version in root `AGENT_VERSION`
+(currently `2.1.6~nb3`), independently of server releases. See
+[independent versioning](independent-versioning.md) for the release rules.
+If this fork has no tags, fetch the parent's tags locally first:
 
 ```sh
 git fetch https://github.com/PatchMon/PatchMon.git --tags
 ```
 
-Alternatively, supply `--version X.Y.Z`; the fork marker is appended automatically.
-Increase `NB_BUILD` for the next distributed fork build (or override `NB_BUILD`
-for a deliberate local test). Do not invent a newer upstream version just to
-distinguish the fork. Versions remain ordered by upstream version first, then
-the numeric NB build number. The same upstream release without an NB marker sorts
-below its NB builds, so same-release upstream builds do not replace fork agents.
+Alternatively, supply `--version X.Y.Z`; the server's fork marker is appended
+automatically. Increase `NB_BUILD` for the next distributed server build (or
+override `NB_BUILD` for a deliberate local test). Neither changes the bundled
+agent version. Use `AGENT_VERSION=X.Y.Z~nbN` for a deliberate agent override.
+Do not invent a newer upstream version just to distinguish the fork. Versions
+remain ordered by upstream version first, then the numeric NB build number.
+The same upstream release without an NB marker sorts below its NB builds, so
+same-release upstream builds do not replace fork agents.
 
 Docker tags cannot contain `~`. For example, build `patchmon-nb:nb1` with an
-application/agent version of `2.1.6~nb1`:
+server version of `2.1.6~nb1` (agents retain their own pinned version):
 
 ```sh
 mise exec -- ./docker/build.sh --tag nb1
@@ -60,8 +64,9 @@ Verify that:
 - `/health` reports database and Redis connectivity.
 - `/` serves the embedded frontend and its JavaScript/CSS assets.
 - `/app/agents` contains binaries for all ten supported OS/architecture targets.
-- The native agent binary's version matches the server build version; execute
-  only its version command, not an agent install or service startup.
+- The native agent binary's version matches `AGENT_VERSION`, not necessarily the
+  server build version; execute only its version command, not an agent install
+  or service startup.
 
 Record results here after the test. A local smoke test does not prove private
 registry access from Fenrir, agent self-updates, or all application features.

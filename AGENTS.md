@@ -91,11 +91,14 @@
   image. A plain Docker build on a clean checkout fails: the production Dockerfile
   copies ignored `server-prebuilt/` and `agents-prebuilt/`, it does not compile
   them. The script builds both modules and the embedded UI first.
-- Build versions come from the nearest Git tag or explicit `VERSION`, not
-  `package.json`. Root `NB_BUILD` is the committed fork build number; Make,
-  Docker, and release-context append `~nbN` (for example `2.1.6~nb1`) to both
-  server and agent versions. Increment it before distributing a changed fork
-  build. Docker tags cannot contain `~`; use `:nb1` or `:2.1.6-nb1` for images.
+- Server build versions come from the nearest Git tag or explicit `VERSION`,
+  plus the root `NB_BUILD`, not `package.json`. Agents use the complete version
+  pinned in root `AGENT_VERSION`, independently of server tags and build bumps.
+  Increment `NB_BUILD` before distributing a changed server build; change
+  `AGENT_VERSION` only for agent code, dependencies, or security-relevant build
+  changes. Make/Docker accept a complete `AGENT_VERSION` override. Agent Make's
+  legacy explicit `VERSION` / `NB_BUILD` override remains supported.
+  Docker tags cannot contain `~`; use `:nb1` or `:2.1.6-nb1` for images.
 - Server, agent, and frontend version comparators must agree:
   `2.1.6 < 2.1.6~nb1 < 2.1.6~nb2 < 2.1.7`. Keep agent binary/output parsers
   and config-version validation suffix-aware; dropping `~nbN` causes update loops.

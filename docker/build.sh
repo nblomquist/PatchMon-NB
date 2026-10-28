@@ -2,9 +2,8 @@
 # =============================================================================
 # Build the PatchMon server Docker image locally.
 #
-# The git tag is the single source of truth for the version. Nothing in the
-# repo declares one, so the version has to be passed into the image build.
-# This script works it out for you and passes it through as a build arg.
+# Server versions follow the Git tag plus NB_BUILD. Bundled agents use their
+# independent AGENT_VERSION pin (or the AGENT_VERSION environment override).
 #
 # The image no longer compiles anything: it copies prebuilt binaries out of
 # agents-prebuilt/ and server-prebuilt/, both gitignored. This script produces
@@ -16,6 +15,7 @@
 #                                          # the auto-update path)
 #   ./docker/build.sh --tag mytag          # image tag (default: local)
 #   IMAGE_NAME=my-image ./docker/build.sh # override image name (default: patchmon-nb)
+#   AGENT_VERSION=2.1.7~nb1 ./docker/build.sh # override the bundled agent version
 #   ./docker/build.sh --skip-agents        # reuse whatever is in agents-prebuilt/
 # =============================================================================
 
@@ -72,15 +72,17 @@ if ! printf '%s' "$NB_BUILD" | grep -qE '^[1-9][0-9]*$'; then
   die "NB_BUILD must be a positive integer"
 fi
 if [[ "$VERSION" != *~nb* ]]; then VERSION="${VERSION}~nb${NB_BUILD}"; fi
+AGENT_VERSION="$(bash "$ROOT/tools/agent-version.sh")"
 
 echo "==> Version: $VERSION"
+echo "==> Agent version: $AGENT_VERSION"
 
 # The server image bundles agent binaries from agents-prebuilt/ (gitignored).
 if [ "$SKIP_AGENTS" = "true" ]; then
   echo "==> Skipping agent build"
 else
   echo "==> Building agent binaries"
-  make -C agent-source-code build-linux build-freebsd build-windows VERSION="$VERSION"
+  make -C agent-source-code build-linux build-freebsd build-windows AGENT_VERSION="$AGENT_VERSION"
 fi
 
 mkdir -p agents-prebuilt

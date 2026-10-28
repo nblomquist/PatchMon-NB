@@ -6,21 +6,21 @@ BUILD_DIR=build
 # Where backend serves agents from (both must stay in sync)
 AGENTS_REPO=../agents
 AGENTS_DOCKER=../docker/compose_dev_data/agents
-# The git tag is the single source of truth for the version; nothing in the
-# repo declares it. `--abbrev=0` yields the bare nearest tag (e.g. v2.0.2)
-# rather than v2.0.2-60-gABC, because the server parses versions as
-# dot-separated ints and silently treats any suffix as 0.
-#
-# Override to test the update path deliberately:  make build VERSION=2.0.1
-#
-# A build with no -X at all is worse than a wrong version: the server reads the
-# version out of the binary's build info, and a binary that declares none is
-# refused outright, so those agents can never update. Fall back to a marker
-# version rather than shipping one that is silently unstamped.
-VERSION ?= $(patsubst v%,%,$(shell git describe --tags --abbrev=0 2>/dev/null))
+# The complete agent version is pinned independently of server tags and NB_BUILD.
+# Override deliberately with AGENT_VERSION=2.1.7~nb1. Invalid or missing pins
+# fail before compiling, rather than creating an agent with no update version.
+ifeq ($(origin VERSION),undefined)
+AGENT_VERSION ?= $(shell cat ../AGENT_VERSION)
+else
+# Preserve the existing explicit VERSION / NB_BUILD override for local builds.
 NB_BUILD ?= $(shell cat ../NB_BUILD)
-BASE_VERSION = $(if $(strip $(VERSION)),$(strip $(VERSION)),0.0.0-dev)
-VERSION_RESOLVED = $(if $(findstring ~nb,$(BASE_VERSION)),$(BASE_VERSION),$(BASE_VERSION)~nb$(NB_BUILD))
+AGENT_VERSION ?= $(if $(findstring ~nb,$(VERSION)),$(VERSION),$(VERSION)~nb$(NB_BUILD))
+endif
+# Quote the value as data, including apostrophes, before passing it to the shell.
+VERSION_RESOLVED := $(shell bash ../tools/agent-version.sh '$(subst ','"'"',$(AGENT_VERSION))')
+ifeq ($(VERSION_RESOLVED),)
+$(error Invalid AGENT_VERSION)
+endif
 VERSION_X = -X patchmon-agent/internal/pkgversion.Version=$(VERSION_RESOLVED)
 # Strip debug info; inject the version resolved above.
 LDFLAGS=-ldflags "-s -w $(VERSION_X)"
