@@ -37,7 +37,7 @@
   <dialog id="review" aria-labelledby="review-title">
     <header><div><h2 id="review-title">Review selected hosts</h2><p id="scope"></p></div><button type="button" id="close" aria-label="Close review">✕</button></header>
     <div class="body">
-      <div class="steps" aria-label="Existing wizard sequence"><span>Hosts</span><span>Packages</span><span>Validate</span><span>Timing</span><span>Approval</span><b>Submit</b></div>
+      <ol class="steps" style="list-style:none;padding:0" aria-label="Existing wizard sequence"><li>Hosts</li><li>Packages</li><li>Validate</li><li>Timing</li><li>Approval</li><li><b>Submit</b></li></ol>
       <p class="small">Proposed final review in the existing wizard. Earlier timing and approval screens are condensed below for this mockup only.</p>
       <div class="summary" id="summary"></div><div id="review-hosts"></div>
       <div class="settings"><label>Timing<select id="timing"><option>Follow each host’s policy</option><option>Run immediately (explicit override)</option></select></label><label>Approval<select id="approval"><option>Run with my permission</option><option>Submit for approval</option></select></label></div>

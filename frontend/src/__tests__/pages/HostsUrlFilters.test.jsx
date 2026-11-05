@@ -355,14 +355,16 @@ describe("Hosts patch selection permission", () => {
 			await screen.findByRole("button", { name: "Patch Selected" }),
 		).toBeEnabled();
 	});
-	it.each([
-		"permission",
-		"module",
-	])("hides Patch Selected without the %s", async (missing) => {
-		patchAccess.manage = missing !== "permission";
-		patchAccess.enabled = missing !== "module";
-		renderAt("/hosts?selected=h1&filter=selected");
-		await screen.findByText("1 host selected");
-		expect(screen.queryByRole("button", { name: "Patch Selected" })).toBeNull();
-	});
+	it.each(["permission", "module"])(
+		"hides Patch Selected without the %s",
+		async (missing) => {
+			patchAccess.manage = missing !== "permission";
+			patchAccess.enabled = missing !== "module";
+			renderAt("/hosts?selected=h1&filter=selected");
+			await screen.findByText("1 host selected");
+			expect(
+				screen.queryByRole("button", { name: "Patch Selected" }),
+			).toBeNull();
+		},
+	);
 });
