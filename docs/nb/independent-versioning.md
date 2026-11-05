@@ -3,6 +3,12 @@
 ## Release rules
 
 - Server: nearest Git tag or explicit version, plus root `NB_BUILD`.
+- Reset `NB_BUILD` to `1` for the first fork build on a new upstream release.
+  For example, the first build on upstream `2.1.7` is `2.1.7~nb1`, even if the
+  previous upstream release reached `2.1.6~nb4`. Fetch and verify the upstream
+  release tag before building; fetching `main` with `--no-tags` is not enough.
+  Publish versioned image tags such as `2.1.7-nb1` so restarting the counter
+  does not overwrite an earlier release's `nb1` image.
 - Agent: the complete version in root `AGENT_VERSION`, initially `2.1.6~nb3`.
   Server tags, commit counts, and `NB_BUILD` do not change this default.
 - For a server/UI-only release, increase `NB_BUILD` and leave `AGENT_VERSION`
@@ -19,6 +25,21 @@ The existing version ordering stays unchanged:
 `2.1.6 < 2.1.6~nb1 < 2.1.6~nb2 < 2.1.7`.
 
 ## Build entrypoints
+
+Before a release build:
+
+1. Check release tags in `PatchMon/PatchMon`, not just commits on `main`.
+2. Fetch the applicable release tag explicitly, for example:
+   `git fetch --no-tags https://github.com/PatchMon/PatchMon.git refs/tags/v2.1.7:refs/tags/v2.1.7`.
+   Stop and investigate any conflicting local tag; do not force-replace it.
+3. Verify `git merge-base --is-ancestor v2.1.7 HEAD` succeeds and check
+   `git describe --tags --abbrev=0`. Do not label code as a release it does not
+   contain, or keep using an older base version after merging the new release.
+4. Set `NB_BUILD` for that upstream release. Review `AGENT_VERSION` separately;
+   update it when agent changes are included, not just because the server changed.
+5. Build with the verified base version and a full versioned image tag, for
+   example `mise exec -- ./docker/build.sh --version 2.1.7 --tag 2.1.7-nb1`.
+   Check the running server and bundled agent versions before deployment.
 
 Default builds need no extra options:
 

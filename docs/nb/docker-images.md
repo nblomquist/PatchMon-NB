@@ -128,6 +128,11 @@ production.
 - CI version resolution requires tags in the fork too. Fetching tags locally does
   not make them available to GitHub Actions. Review which tag/branch to publish
   before pushing; tag pushes can trigger release workflows.
+- Before a local release build, check and fetch the applicable upstream release
+  tag and verify the build contains it. Do not rely on tags left over from a
+  `--no-tags` merge. Reset the fork build counter for a new upstream release
+  and use a full image tag such as `2.1.7-nb1`; do not reuse an older `nb1` tag.
+  Follow the checklist in [independent versioning](independent-versioning.md).
 - A successful local DHI login does not authenticate GitHub Actions. Before CI
   publishing, add a secure DHI registry login to the image-build job; the current
   workflow only logs in to GHCR and optionally Harbor. Do not expose registry

@@ -5,6 +5,11 @@
 - Track the parent repository, `PatchMon/PatchMon`, closely. Keep fork changes
   small and focused so upstream updates remain easy to merge; avoid unrelated
   refactors, renames, dependency changes, and formatting churn.
+- When checking or merging upstream, check its release tags as well as `main`.
+  Before a release build, fetch the relevant upstream tag and verify it is an
+  ancestor of the build commit. A `--no-tags` branch fetch does not refresh
+  release versions; do not stamp a build from a stale local tag or an old
+  explicit `--version`. Never replace an existing conflicting tag silently.
 - Keep our Docker images and agents drop-in replacements for upstream wherever
   possible. Preserve existing configuration, environment variables, ports,
   volume paths, install/update flows, API and agent protocols, and data formats.
@@ -94,11 +99,15 @@
 - Server build versions come from the nearest Git tag or explicit `VERSION`,
   plus the root `NB_BUILD`, not `package.json`. Agents use the complete version
   pinned in root `AGENT_VERSION`, independently of server tags and build bumps.
-  Increment `NB_BUILD` before distributing a changed server build; change
+  Increment `NB_BUILD` before distributing a changed server build on the same
+  upstream release; reset it to `1` for the first build on a new upstream
+  release (for example, `2.1.6~nb4` → `2.1.7~nb1`). Change
   `AGENT_VERSION` only for agent code, dependencies, or security-relevant build
   changes. Make/Docker accept a complete `AGENT_VERSION` override. Agent Make's
   legacy explicit `VERSION` / `NB_BUILD` override remains supported.
-  Docker tags cannot contain `~`; use `:nb1` or `:2.1.6-nb1` for images.
+  Docker tags cannot contain `~`; use full versioned release tags such as
+  `:2.1.7-nb1`. Do not overwrite an older release's `:nb1` when the counter
+  resets. See `docs/nb/independent-versioning.md` for the release checklist.
 - Server, agent, and frontend version comparators must agree:
   `2.1.6 < 2.1.6~nb1 < 2.1.6~nb2 < 2.1.7`. Keep agent binary/output parsers
   and config-version validation suffix-aware; dropping `~nbN` causes update loops.
